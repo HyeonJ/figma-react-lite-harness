@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# bootstrap.sh — figma-react-lite 원샷 프로젝트 셋업.
+#
+# 수행:
+#   1. templates/vite-react-ts 스캐폴드 현재 디렉토리에 복사
+#   2. package.json / index.html / PROGRESS.md 템플릿 치환
+#   3. .claude/ (agents + skills) 복사
+#   4. scripts/ 자체 복사 (extract-tokens / measure-quality / figma-rest-image 등)
+#   5. docs/workflow.md + team-playbook.md + project-context.md 복사
+#   6. CLAUDE.md 복사
+#   7. npm install 실행
+#   8. extract-tokens.sh <fileKey> 자동 호출
+#   9. git init + 초기 커밋
+#
+# Usage:
+#   bash bootstrap.sh <figma-url> [project-name]
+#
+# 인자:
+#   figma-url       Figma 파일 URL (figma.com/design/<fileKey>/... 또는 fileKey 단독)
+#   project-name    (선택) package.json name, default: 현재 디렉토리명
+#
+# 환경변수:
+#   FIGMA_TOKEN     필수 (extract-tokens 호출용)
+#   HARNESS_DIR     (선택) figma-react-lite-harness 위치. 미지정 시 이 스크립트 위치 기반 자동 탐지
+
+set -u
+
+FIGMA_URL="${1:-}"
+PROJECT_NAME="${2:-$(basename "$PWD")}"
+
+if [ -z "$FIGMA_URL" ]; then
+  echo "usage: bootstrap.sh <figma-url-or-fileKey> [project-name]" >&2
+  echo "  예: bootstrap.sh https://figma.com/design/ABC123/Project my-project" >&2
+  exit 2
+fi
+
+# fileKey 추출
+if [[ "$FIGMA_URL" =~ figma\.com/(design|file)/([^/]+) ]]; then
+  FILE_KEY="${BASH_REMATCH[2]}"
+else
+  # URL이 아니면 fileKey 그대로
+  FILE_KEY="$FIGMA_URL"
+  FIGMA_URL="https://www.figma.com/design/${FILE_KEY}"
+fi
+
+echo "[bootstrap] fileKey=${FILE_KEY} project=${PROJECT_NAME}"
+
+# HARNESS_DIR 결정
+if [ -z "${HARNESS_DIR:-}" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  HARNESS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
+
+if [ ! -d "$HARNESS_DIR/templates/vite-react-ts" ]; then
+  echo "ERROR: HARNESS_DIR 에 templates/vite-react-ts 없음: $HARNESS_DIR" >&2
+  exit 3
+fi
+
+# 현재 디렉토리 비어있는지 확인 (node_modules 제외)
+EXISTING=$(find . -maxdepth 1 -mindepth 1 ! -name node_modules ! -name ".git" 2>/dev/null | wc -l)
+if [ "$EXISTING" -gt 0 ]; then
+  echo "WARN: 현재 디렉토리 비어있지 않음. 파일 덮어쓰기 가능성." >&2
+  echo "  계속하려면 3초 안에 Ctrl+C 로 취소하거나 Enter." >&2
+  read -t 3 -r || true
+fi
+
+# ---------- 1. 템플릿 복사 ----------
+echo "[bootstrap] 1/9 템플릿 복사"
+cp -r "$HARNESS_DIR/templates/vite-react-ts/." .
+
+# ---------- 2. 템플릿 치환 ----------
+echo "[bootstrap] 2/9 템플릿 placeholder 치환"
+# package.json name
+if [ -f package.json ]; then
+  node -e "
+    const fs=require('fs');
+    const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+    p.name='${PROJECT_NAME}'.toLowerCase().replace(/[^a-z0-9-]/g,'-');
+    fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+  "
+fi
+# index.html title
+if [ -f index.html ]; then
+  sed -i.bak "s/{PROJECT_NAME}/${PROJECT_NAME}/g" index.html && rm -f index.html.bak
+fi
+# PROGRESS.md 템플릿 → PROGRESS.md
+if [ -f PROGRESS.md.tmpl ]; then
+  sed -e "s|{PROJECT_NAME}|${PROJECT_NAME}|g" \
+      -e "s|{FIGMA_URL}|${FIGMA_URL}|g" \
+      -e "s|{FILE_KEY}|${FILE_KEY}|g" \
+      PROGRESS.md.tmpl > PROGRESS.md
+  rm -f PROGRESS.md.tmpl
+fi
+
+# ---------- 3. .claude/ 복사 ----------
+echo "[bootstrap] 3/9 .claude/ agents + skills 복사"
+mkdir -p .claude
+cp -r "$HARNESS_DIR/.claude/agents" .claude/
+cp -r "$HARNESS_DIR/.claude/skills" .claude/
+
+# ---------- 4. scripts/ 복사 (프로젝트에서도 직접 호출할 수 있도록) ----------
+echo "[bootstrap] 4/9 scripts/ 복사"
+mkdir -p scripts
+cp "$HARNESS_DIR/scripts/figma-rest-image.sh" scripts/
+cp "$HARNESS_DIR/scripts/extract-tokens.sh" scripts/
+cp "$HARNESS_DIR/scripts/_extract-tokens-analyze.mjs" scripts/
+cp "$HARNESS_DIR/scripts/check-text-ratio.mjs" scripts/
+cp "$HARNESS_DIR/scripts/check-token-usage.mjs" scripts/
+cp "$HARNESS_DIR/scripts/measure-quality.sh" scripts/
+chmod +x scripts/*.sh scripts/*.mjs 2>/dev/null || true
+
+# ---------- 5. docs/ 복사 ----------
+echo "[bootstrap] 5/9 docs/ 복사"
+mkdir -p docs
+cp "$HARNESS_DIR/docs/workflow.md" docs/
+cp "$HARNESS_DIR/docs/team-playbook.md" docs/
+# project-context.md.tmpl → project-context.md (치환)
+if [ -f "$HARNESS_DIR/docs/project-context.md.tmpl" ]; then
+  sed -e "s|{PROJECT_NAME}|${PROJECT_NAME}|g" \
+      -e "s|{FIGMA_URL}|${FIGMA_URL}|g" \
+      -e "s|{FILE_KEY}|${FILE_KEY}|g" \
+      "$HARNESS_DIR/docs/project-context.md.tmpl" > docs/project-context.md
+fi
+
+# ---------- 6. CLAUDE.md 복사 ----------
+echo "[bootstrap] 6/9 CLAUDE.md 복사"
+cp "$HARNESS_DIR/CLAUDE.md" CLAUDE.md
+
+# ---------- 7. npm install ----------
+echo "[bootstrap] 7/9 npm install (오래 걸릴 수 있음)"
+if command -v npm >/dev/null 2>&1; then
+  npm install --loglevel=error 2>&1 | tail -20 || echo "  ⚠ npm install 실패 — 수동 실행 필요"
+else
+  echo "  ⚠ npm 미설치 — Node 18+ 설치 후 'npm install' 수동 실행"
+fi
+
+# ---------- 8. extract-tokens 자동 호출 ----------
+echo "[bootstrap] 8/9 extract-tokens.sh 실행 (Figma 토큰 추출)"
+if [ -z "${FIGMA_TOKEN:-}" ] && command -v powershell >/dev/null 2>&1; then
+  FIGMA_TOKEN=$(powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('FIGMA_TOKEN', 'User')" 2>/dev/null | tr -d '\r\n')
+  export FIGMA_TOKEN
+fi
+
+if [ -z "${FIGMA_TOKEN:-}" ]; then
+  echo "  ⚠ FIGMA_TOKEN 미설정 — 토큰 추출 스킵"
+  echo "  설정 후 수동 실행: bash scripts/extract-tokens.sh ${FILE_KEY}"
+else
+  bash scripts/extract-tokens.sh "$FILE_KEY" || echo "  ⚠ extract-tokens 실패 — 수동 재시도 필요"
+fi
+
+# ---------- 9. git init + 초기 커밋 ----------
+echo "[bootstrap] 9/9 git init + 초기 커밋"
+if [ ! -d .git ]; then
+  git init -q
+fi
+git add -A 2>/dev/null || true
+git commit -q -m "chore: bootstrap from figma-react-lite-harness (fileKey ${FILE_KEY})" || echo "  (이미 커밋된 상태)"
+
+echo ""
+echo "=================================="
+echo "✓ bootstrap 완료"
+echo ""
+echo "다음 단계:"
+echo "  1. docs/token-audit.md 를 열어 토큰 검토"
+echo "  2. docs/project-context.md 에 페이지 Node ID 채우기"
+echo "  3. npm run dev 로 dev 서버 기동"
+echo "  4. Claude Code 세션에서:"
+echo "     \"figma-react-lite 스킬로 첫 페이지 진행\""
+echo ""

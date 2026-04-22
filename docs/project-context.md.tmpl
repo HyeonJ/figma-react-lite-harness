@@ -1,0 +1,56 @@
+# docs/project-context.md — 프로젝트별 Figma 맥락
+
+> bootstrap.sh가 이 템플릿을 `docs/project-context.md`로 복사한다. 프로젝트마다 수정해서 사용.
+
+## 1. 프로젝트 메타
+
+- **프로젝트명**: {PROJECT_NAME}
+- **Figma URL**: {FIGMA_URL}
+- **fileKey**: {FILE_KEY}
+- **Desktop 캔버스**: 1440px (또는 1280/1920)
+- **Mobile 캔버스**: 375px (있으면)
+
+## 2. 페이지 목록
+
+| # | 페이지명 | 라우트 | Node ID (Desktop) | Node ID (Mobile) | 크기 | 비고 |
+|---|---------|--------|-------------------|------------------|------|------|
+| 1 | Home | `/` | ??:?? | ??:?? | 1280x???? | |
+| 2 | About | `/about` | ??:?? | - | | |
+
+## 3. 공통 컴포넌트 카탈로그
+
+페이지 전체에 재사용되는 컴포넌트. 5페이지 전부 공통이면 레이아웃, 2~3 페이지면 ui/.
+
+| 컴포넌트 | 위치 | Figma Node | 재사용 페이지 | 상태 |
+|---------|------|-----------|-------------|------|
+| NavBar | `src/components/layout/NavBar.tsx` | ??:?? | 전체 | [ ] |
+| Footer | `src/components/layout/Footer.tsx` | ??:?? | 전체 | [ ] |
+| CtaButton | `src/components/ui/CtaButton.tsx` | ??:?? | 다수 | [ ] |
+
+## 4. 페이지별 섹션 분해 (Phase 2 산출)
+
+### Home (`/`)
+
+| # | 섹션 | Node ID | 예상 토큰 | 크기 | 분할 사유 |
+|---|------|---------|-----------|------|----------|
+| 1 | home-hero | ??:?? | ~3K | 1280x800 | |
+| 2 | home-featured-grid | ??:?? | ~5K | 1280x600 | 반복 카드 3+ |
+
+(각 페이지마다 반복)
+
+## 5. 리스크 메모
+
+Phase 2에서 발견된 까다로운 요소:
+
+- `home-hero`: blend mode `hard-light` 사용 (엔진 차이로 pixelmatch 5%+ 가능)
+- `faqs-accordion`: single-open 상태 로직 필요
+- `contact-form`: HTML5 validation + submit handler
+
+## 6. 토큰 override (선택)
+
+`extract-tokens.sh` 결과가 직관적이지 않으면 수동 override:
+
+- 자동 분류된 `--brand-3` 실제는 "accent" 역할 → CSS 변수명 수동 수정
+- `--surface-1` 실제는 `bg-cream-50` 브랜드 명명 → 프로젝트별 의미있는 이름으로
+
+수동 수정 시 `docs/token-audit.md`에도 매핑 기록.
