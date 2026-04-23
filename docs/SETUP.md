@@ -219,19 +219,23 @@ printenv FIGMA_TOKEN | head -c 10
 
 ## §5. 하네스 리포 clone
 
-개인 작업 공간에 clone. 경로는 본인 관례대로 자유롭게:
-
 ```bash
-# macOS / Linux / Git Bash (권장 — ~ 전개 일관)
-git clone https://github.com/HyeonJ/figma-react-lite-harness.git ~/workspace/figma-react-lite-harness
-
-# Windows PowerShell / cmd (~ 전개가 일관되지 않으므로 명시적 경로 권장)
-git clone https://github.com/HyeonJ/figma-react-lite-harness.git $HOME/workspace/figma-react-lite-harness
-# 또는
-git clone https://github.com/HyeonJ/figma-react-lite-harness.git C:/Dev/Workspace/figma-react-lite-harness
+git clone https://github.com/HyeonJ/figma-react-lite-harness.git "$HOME/workspace/figma-react-lite-harness"
 ```
 
-이후 문서에서 `~/workspace/figma-react-lite-harness` 로 나오는 부분은 **본인이 실제 clone한 경로로 치환**하면 됩니다.
+`$HOME/workspace/` 는 **예시**. 본인 관례대로 경로 변경 가능. 이 한 줄은 **macOS / Linux / Git Bash / Windows PowerShell 어디서든 그대로 동작**:
+
+| 셸 | `$HOME` 전개 결과 |
+|---|---|
+| macOS | `/Users/<username>` |
+| Linux | `/home/<username>` |
+| Git Bash (Windows) | `/c/Users/<username>` |
+| **PowerShell 5.1/7.x** (Windows) | `C:\Users\<username>` |
+| cmd (Windows) | ❌ `$HOME` 미지원 → `%USERPROFILE%\workspace\figma-react-lite-harness` 로 수동 치환 |
+
+> **Windows 사용자 권장**: PowerShell 또는 Git Bash. `$HOME` 이 자동 전개되어 문서 그대로 복붙 가능.
+
+이후 문서에서 `$HOME/workspace/figma-react-lite-harness` 로 나오는 부분은 **본인이 실제 clone한 경로로 치환**하면 됩니다.
 
 주의: **하네스 리포는 템플릿이지 작업 디렉토리가 아니다.** 실제 프로젝트는 별도 디렉토리에 만들고, 하네스의 `bootstrap.sh` 가 필요한 파일을 그곳으로 복사한다.
 
@@ -240,7 +244,7 @@ git clone https://github.com/HyeonJ/figma-react-lite-harness.git C:/Dev/Workspac
 ## §6. doctor.sh 최종 확인
 
 ```bash
-bash ~/workspace/figma-react-lite-harness/scripts/doctor.sh
+bash "$HOME/workspace/figma-react-lite-harness/scripts/doctor.sh"
 ```
 
 출력 예시:
@@ -299,8 +303,8 @@ npm install -D @lhci/cli lighthouse
 
 ```bash
 # 1. 신규 프로젝트 디렉토리
-mkdir ~/workspace/my-new-project
-cd ~/workspace/my-new-project
+mkdir "$HOME/workspace/my-new-project"
+cd "$HOME/workspace/my-new-project"
 
 # 2. Claude Code 세션
 claude --dangerously-skip-permissions

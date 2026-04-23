@@ -43,26 +43,27 @@ bash scripts/doctor.sh
 
 > Windows에서는 **PowerShell / cmd / Git Bash 어느 셸에서든** 동일하게 실행 가능. `.sh` 호출은 내부적으로 `bash.exe` (Git for Windows 설치 시 자동 PATH 등록)가 처리. 자세한 셸별 명령 대조는 [docs/SETUP.md §8](./docs/SETUP.md#8-windows-셸별-명령어-대조).
 
-> **경로 표기 규약** — 이 문서의 `~/workspace/...` 는 **예시**. 본인 작업 공간 경로로 자유롭게 바꾸세요.
-> - macOS / Linux / Git Bash: `~/workspace/` 그대로 동작
-> - Windows PowerShell / cmd: `~` 전개가 일관되지 않으므로 `$HOME/workspace/` 또는 `C:/Dev/Workspace/` 같이 명시적 경로 권장
+> **경로 표기 규약** — `$HOME/workspace/...` 는 **예시**. 본인 경로로 자유롭게 교체.
+> - macOS / Linux / Git Bash / **Windows PowerShell**: `$HOME/workspace/` 그대로 동작 (셸이 자동 전개 → 각 OS 홈 경로)
+> - **Windows cmd**: `bash xxx.sh` 명령은 OK (bash.exe 내부에서 `$HOME` 전개). `mkdir`·`cd` 같은 cmd 네이티브 명령은 `%USERPROFILE%\workspace\...` 로 치환 필요
+> - cmd 사용자는 가급적 **PowerShell 또는 Git Bash** 권장
 
 ```bash
 # 0. 환경 셋업 (최초 1회) — 상세는 docs/SETUP.md
 #    Node / Claude Code CLI / Figma MCP / FIGMA_TOKEN 준비
 
 # 1. 하네스 clone (한 번만) — 본인 원하는 위치로 교체 가능
-git clone https://github.com/HyeonJ/figma-react-lite-harness.git ~/workspace/figma-react-lite-harness
+git clone https://github.com/HyeonJ/figma-react-lite-harness.git "$HOME/workspace/figma-react-lite-harness"
 
 # 2. (최초 1회) FIGMA_TOKEN 등록 — 대화형
-bash ~/workspace/figma-react-lite-harness/scripts/setup-figma-token.sh
+bash "$HOME/workspace/figma-react-lite-harness/scripts/setup-figma-token.sh"
 
 # 3. 환경 확인
-bash ~/workspace/figma-react-lite-harness/scripts/doctor.sh
+bash "$HOME/workspace/figma-react-lite-harness/scripts/doctor.sh"
 
 # 4. 신규 프로젝트 디렉토리
-mkdir ~/workspace/my-new-project
-cd ~/workspace/my-new-project
+mkdir "$HOME/workspace/my-new-project"
+cd "$HOME/workspace/my-new-project"
 
 # 5. Claude Code 세션 오픈
 claude --dangerously-skip-permissions
@@ -76,7 +77,7 @@ Claude 세션에 아래를 복붙 (Figma URL만 본인 것으로 교체):
 
 ```
 하네스 리포의 README.md를 읽고
-(경로 예시: ~/workspace/figma-react-lite-harness/README.md —
+(경로 예시: $HOME/workspace/figma-react-lite-harness/README.md —
  본인이 clone한 경로로 교체),
 아래 Figma URL로 bootstrap.sh를 실행해서 이 디렉토리에 프로젝트를 초기화해줘.
 
