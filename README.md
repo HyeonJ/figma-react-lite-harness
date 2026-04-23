@@ -43,22 +43,26 @@ bash scripts/doctor.sh
 
 > Windows에서는 **PowerShell / cmd / Git Bash 어느 셸에서든** 동일하게 실행 가능. `.sh` 호출은 내부적으로 `bash.exe` (Git for Windows 설치 시 자동 PATH 등록)가 처리. 자세한 셸별 명령 대조는 [docs/SETUP.md §8](./docs/SETUP.md#8-windows-셸별-명령어-대조).
 
+> **경로 표기 규약** — 이 문서의 `~/workspace/...` 는 **예시**. 본인 작업 공간 경로로 자유롭게 바꾸세요.
+> - macOS / Linux / Git Bash: `~/workspace/` 그대로 동작
+> - Windows PowerShell / cmd: `~` 전개가 일관되지 않으므로 `$HOME/workspace/` 또는 `C:/Dev/Workspace/` 같이 명시적 경로 권장
+
 ```bash
 # 0. 환경 셋업 (최초 1회) — 상세는 docs/SETUP.md
 #    Node / Claude Code CLI / Figma MCP / FIGMA_TOKEN 준비
 
-# 1. 하네스 clone (한 번만)
-git clone https://github.com/HyeonJ/figma-react-lite-harness.git C:/Dev/Workspace/figma-react-lite-harness
+# 1. 하네스 clone (한 번만) — 본인 원하는 위치로 교체 가능
+git clone https://github.com/HyeonJ/figma-react-lite-harness.git ~/workspace/figma-react-lite-harness
 
 # 2. (최초 1회) FIGMA_TOKEN 등록 — 대화형
-bash C:/Dev/Workspace/figma-react-lite-harness/scripts/setup-figma-token.sh
+bash ~/workspace/figma-react-lite-harness/scripts/setup-figma-token.sh
 
 # 3. 환경 확인
-bash C:/Dev/Workspace/figma-react-lite-harness/scripts/doctor.sh
+bash ~/workspace/figma-react-lite-harness/scripts/doctor.sh
 
 # 4. 신규 프로젝트 디렉토리
-mkdir C:/Dev/Workspace/my-new-project
-cd C:/Dev/Workspace/my-new-project
+mkdir ~/workspace/my-new-project
+cd ~/workspace/my-new-project
 
 # 5. Claude Code 세션 오픈
 claude --dangerously-skip-permissions
@@ -71,7 +75,9 @@ claude --dangerously-skip-permissions
 Claude 세션에 아래를 복붙 (Figma URL만 본인 것으로 교체):
 
 ```
-C:/Dev/Workspace/figma-react-lite-harness/README.md 를 읽고,
+하네스 리포의 README.md를 읽고
+(경로 예시: ~/workspace/figma-react-lite-harness/README.md —
+ 본인이 clone한 경로로 교체),
 아래 Figma URL로 bootstrap.sh를 실행해서 이 디렉토리에 프로젝트를 초기화해줘.
 
 Figma URL: https://www.figma.com/design/ABC123XYZ/MyProject
@@ -88,7 +94,7 @@ Figma URL: https://www.figma.com/design/ABC123XYZ/MyProject
 
 Claude가 수행하는 것:
 1. 하네스 README/docs 읽기
-2. `bash C:/Dev/Workspace/figma-react-lite-harness/scripts/bootstrap.sh <figma-url>` 실행
+2. `bash <하네스경로>/scripts/bootstrap.sh <figma-url>` 실행
 3. 토큰 추출 결과 요약 보고
 
 **산출물**: `src/styles/tokens.css` / `fonts.css` / `docs/token-audit.md` / `docs/project-context.md` / `PROGRESS.md` / Vite 스캐폴드

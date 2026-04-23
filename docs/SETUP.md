@@ -219,13 +219,19 @@ printenv FIGMA_TOKEN | head -c 10
 
 ## §5. 하네스 리포 clone
 
+개인 작업 공간에 clone. 경로는 본인 관례대로 자유롭게:
+
 ```bash
-# 개인 작업 공간에 clone
+# macOS / Linux / Git Bash (권장 — ~ 전개 일관)
 git clone https://github.com/HyeonJ/figma-react-lite-harness.git ~/workspace/figma-react-lite-harness
 
-# 또는 Windows
+# Windows PowerShell / cmd (~ 전개가 일관되지 않으므로 명시적 경로 권장)
+git clone https://github.com/HyeonJ/figma-react-lite-harness.git $HOME/workspace/figma-react-lite-harness
+# 또는
 git clone https://github.com/HyeonJ/figma-react-lite-harness.git C:/Dev/Workspace/figma-react-lite-harness
 ```
+
+이후 문서에서 `~/workspace/figma-react-lite-harness` 로 나오는 부분은 **본인이 실제 clone한 경로로 치환**하면 됩니다.
 
 주의: **하네스 리포는 템플릿이지 작업 디렉토리가 아니다.** 실제 프로젝트는 별도 디렉토리에 만들고, 하네스의 `bootstrap.sh` 가 필요한 파일을 그곳으로 복사한다.
 
