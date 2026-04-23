@@ -24,6 +24,9 @@ model: sonnet
 - `route`: URL 경로 (`/`, `/about`, ...)
 - `retry_count`: 이번이 몇 번째 호출인지 (0=첫 시도, 1=재시도)
 - `previous_failure` (재시도 시): 지난번 실패 원인
+- `required_imports` (선택): 오케가 Phase 2 DS 인벤토리에서 식별한 공통 컴포넌트 목록.
+  형식: `[{ name, path, variant? }]`. 명시된 컴포넌트는 **반드시 import해서 사용**.
+  자체 인라인 재구현 금지 (DRY 위반 → 사후 리팩터 발생). 명시 없으면 자율 판단.
 
 ## 4단계 (중단 없이 연속 실행)
 
@@ -121,6 +124,7 @@ bash scripts/measure-quality.sh <section_name> <section-dir>
 - ❌ npm 신규 패키지 추가 (필요시 오케에 요청)
 - ❌ Framelink MCP 호출 (영구 폐기)
 - ❌ text-bearing composite raster 사용 (G6로 차단)
+- ❌ `required_imports` 명시된 공통 컴포넌트를 무시하고 인라인 재구현 (DRY 위반)
 
 ## Figma 채널 정책
 
