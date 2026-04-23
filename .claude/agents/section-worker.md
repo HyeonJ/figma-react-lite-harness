@@ -20,13 +20,16 @@ model: sonnet
 - `section_name`: 섹션 식별자 (`home-hero`, `about-team` 등)
 - `page_name`: 라우트 키 (`home`, `about`, ...)
 - `figma_file_key`: fileKey
-- `figma_node_id`: 이 섹션의 Figma 노드 ID
+- `figma_node_id`: 이 섹션의 Figma 노드 ID (**Desktop 기준**)
 - `route`: URL 경로 (`/`, `/about`, ...)
 - `retry_count`: 이번이 몇 번째 호출인지 (0=첫 시도, 1=재시도)
 - `previous_failure` (재시도 시): 지난번 실패 원인
 - `required_imports` (선택): 오케가 Phase 2 DS 인벤토리에서 식별한 공통 컴포넌트 목록.
   형식: `[{ name, path, variant? }]`. 명시된 컴포넌트는 **반드시 import해서 사용**.
   자체 인라인 재구현 금지 (DRY 위반 → 사후 리팩터 발생). 명시 없으면 자율 판단.
+- `figma_node_id_tablet` (선택): 이 섹션의 Tablet 뷰포트 Figma 노드 ID.
+  Phase 2에서 오케가 감지한 경우에만 전달. 있으면 Tier 2 경로, 없으면 Tier 1 경로 (아래 §반응형 참조)
+- `figma_node_id_mobile` (선택): 이 섹션의 Mobile 뷰포트 Figma 노드 ID (위와 동일 원칙)
 
 ## 4단계 (중단 없이 연속 실행)
 
@@ -34,6 +37,12 @@ model: sonnet
 
 - `scripts/figma-rest-image.sh <fileKey> <nodeId> figma-screenshots/{page}-{section}.png --scale 2`
   - **공통 컴포넌트**(header/footer/shared)는 `figma-screenshots/{section}.png` (page 접두사 없음)
+- **반응형 baseline** (Tier 2 경로 — 뷰포트 nodeId 제공된 경우만):
+  - `figma_node_id_tablet` 있으면:
+    `scripts/figma-rest-image.sh <fileKey> <tabletNodeId> figma-screenshots/{page}-{section}-tablet.png --scale 2`
+  - `figma_node_id_mobile` 있으면:
+    `scripts/figma-rest-image.sh <fileKey> <mobileNodeId> figma-screenshots/{page}-{section}-mobile.png --scale 2`
+  - 확보한 baseline PNG 는 **Read 도구로 직접 열어 시각 확인** 후 구현에 반영
 - `get_design_context` 1회 호출 (Figma MCP) — 토큰 12K 이하 확인
   - 쿼터 부족 또는 **MCP 미등록 상태**(도구 목록에 `mcp__*figma*__get_design_context` 없음) → 즉시 REST로 폴백:
     `curl GET https://api.figma.com/v1/files/{fileKey}/nodes?ids=<nodeId>&depth=3`
@@ -74,6 +83,80 @@ model: sonnet
 8. **Preview 라우트 규약** — `App.tsx` 또는 `src/routes/{Section}Preview.tsx` 로
    경로 `/__preview/{section-name}` 등록. `measure-quality.sh` G7 Lighthouse 측정이
    `http://127.0.0.1:5173/__preview/{section-name}` 고정 URL로 접근하므로 반드시 이 규약 준수.
+9. **반응형** (필수, 아래 §반응형 규칙 참조)
+
+### §반응형 규칙 — Mobile-first + Figma 디자인 우선
+
+**대전제**: 모든 섹션은 **3 breakpoint 모두 동작**. Mobile/Tablet 은 pixel-perfect 아님.
+"깨지지 않고 읽히는 수준" 이 최소 목표.
+
+**Breakpoint 표준** (Tailwind 기본):
+- Mobile: `<768px` — 클래스 prefix 없음 (기본값)
+- Tablet: `md:` prefix (`>=768px`)
+- Desktop: `lg:` prefix (`>=1024px`) — **Figma 원본 스펙 여기에 매칭**
+
+**Mobile-first 작성 필수**: 기본 className = Mobile 값, `md:` / `lg:` 로 상향 덮어쓰기.
+
+---
+
+#### 경로 A — **Tier 2** (Figma에 Tablet/Mobile 디자인 있는 경우)
+
+`figma_node_id_tablet` 또는 `figma_node_id_mobile` 입력이 제공된 경우:
+
+1. 리서치 단계에서 이미 확보한 `figma-screenshots/{page}-{section}-tablet.png`
+   / `figma-screenshots/{page}-{section}-mobile.png` 를 Read 도구로 시각 확인
+2. 해당 뷰포트의 **Figma 디자인 충실 반영**:
+   - Mobile PNG 가 있으면 → 기본 className 은 Mobile PNG 기준으로 작성
+   - Tablet PNG 가 있으면 → `md:` prefix 클래스를 Tablet PNG 기준으로 작성
+   - Desktop PNG (`figma_node_id`) → `lg:` prefix 클래스를 Desktop 기준으로
+3. Figma 가 특정 뷰포트를 제공하지 않은 것은 **아래 경로 B 휴리스틱으로 보완**
+   예: Desktop + Mobile 만 있고 Tablet 없음 → Tablet 은 Desktop 축소판으로 변환
+
+---
+
+#### 경로 B — **Tier 1** (Figma에 Desktop만 있는 경우, fallback)
+
+`figma_node_id_tablet` / `figma_node_id_mobile` 둘 다 없음 → 휴리스틱 적용.
+
+**Desktop 패턴 → Mobile 변환 규칙**:
+
+| Desktop 패턴 | Mobile-first 작성 |
+|---|---|
+| 3~4열 그리드 | `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3` |
+| 2열 그리드 | `grid grid-cols-1 md:grid-cols-2` |
+| 좌우 `flex-row` | `flex flex-col md:flex-row` |
+| 고정 폭 `w-[1280px]` | `w-full max-w-[1280px] mx-auto px-6 md:px-12` |
+| 큰 타이포 (Figma 60px+) | `text-3xl md:text-5xl lg:text-6xl` |
+| 중간 타이포 (Figma 32~48px) | `text-2xl md:text-3xl lg:text-4xl` |
+| 가로 Nav (5+ 링크) | 햄버거 버튼 (Mobile) → `hidden md:flex` 풀 Nav |
+| Hero 배경 + 텍스트 오버레이 | Mobile은 `aspect-[4/5]` 또는 `aspect-square` 로 세로 조정 |
+| absolute 겹침 레이아웃 | Mobile은 relative 스택으로 단순화 (`md:absolute md:inset-0` 등) |
+| 큰 이미지 사이드 배치 | `flex-col md:flex-row`, 이미지 `w-full md:w-1/2` |
+| `gap-12` 큰 간격 | `gap-6 md:gap-12` 단계 축소 |
+| `py-24` 큰 패딩 | `py-12 md:py-24` 단계 축소 |
+
+**금지**:
+- 고정 폭 하드코딩 단독 (`w-[1280px]` 만 있고 대응 없음) → Mobile 가로 스크롤
+- `overflow-visible` 로 큰 요소 유출 (section 기본 `overflow-hidden` 검토)
+- `text-[...]` arbitrary 크기 Mobile/Tablet 대응 없이 단독 사용
+- 터치 타겟 44px 미만 버튼/링크
+
+**허용되는 타협**:
+- Figma 에 없는 Mobile 디자인 → 워커 자체 판단으로 합리적 변환 (디자이너 역할 대행)
+- Mobile 에서 복잡 overlap 을 스택으로 단순화 (의도 유지가 목표)
+- 햄버거 메뉴 내부 디테일(애니메이션 등) 단순화
+
+---
+
+#### 자체 점검 (구현 직전)
+
+- [ ] Mobile 375px 에서 가로 스크롤 생길 요소 있나? (고정 width, 큰 이미지)
+- [ ] 큰 타이포가 Mobile 에서 overflow 안 하나?
+- [ ] 이미지가 Mobile 에서 비율 왜곡 없나? (`object-cover` / `aspect-ratio`)
+- [ ] 터치 타겟 최소 44×44px 확보?
+- [ ] Nav 가로 메뉴가 Mobile 에서 햄버거로 전환되나?
+
+자체 점검 실패 시 구현 수정 후 단계 4 게이트로.
 
 ### 4. 품질 게이트 (필수, 축약 없이 모두 실행)
 

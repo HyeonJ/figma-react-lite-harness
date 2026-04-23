@@ -75,14 +75,37 @@ bootstrap.sh 내부:
    - `docs/project-context.md` 공통 컴포넌트 카탈로그에 기록
    - **이 단계를 놓치면** 섹션 워커들이 각자 인라인 구현해서 사후 리팩터 비용 발생
      (예: 로고를 Nav `<a>text</a>`, Footer `<p>text</p>`, Header `<img>` 로 각자 구현)
-5. 페이지 전체 + 각 섹션 baseline PNG 저장:
+
+5. **반응형 프레임 감지** (페이지별 Tablet/Mobile 디자인 유무 확인):
+   - `get_metadata` 응답에서 **같은 페이지의 뷰포트 변종** 탐색
+   - 감지 단서 4종:
+     - **프레임 이름 키워드**: `Desktop`, `Tablet`, `Mobile`, `768`, `1920`, `375` 등
+     - **프레임 너비**: 1920/1440/1280 = Desktop · 768/1024 = Tablet · 375/390/360 = Mobile
+     - **Figma 페이지 분리**: 별도 페이지 이름에 `Mobile` 등 포함
+     - **섹션 변종**: 동일 섹션명 + 뷰포트 suffix
+   - 감지 결과를 **페이지별로** `docs/project-context.md` 의 페이지 테이블에 기록:
+     - Desktop Node ID (필수, 기본값)
+     - Tablet Node ID (선택)
+     - Mobile Node ID (선택)
+   - **섹션 단위 nodeId 추정**: 페이지 레벨 Tablet/Mobile 프레임을 얻었다면,
+     그 프레임의 자식 섹션들을 Desktop 섹션과 1:1 매핑 (순서·이름 기반).
+     매핑 불명확하면 "⚠ 매핑 수동 확인 필요" 표기.
+
+6. 페이지 전체 + 각 섹션 baseline PNG 저장:
    ```bash
+   # Desktop (필수)
    scripts/figma-rest-image.sh <fileKey> <pageNodeId> figma-screenshots/{page}-full.png --scale 2
    scripts/figma-rest-image.sh <fileKey> <sectionNodeId> figma-screenshots/{page}-{section}.png --scale 2
+
+   # Tablet / Mobile (반응형 프레임 감지된 경우만 — 페이지 전체만 선행 확보)
+   scripts/figma-rest-image.sh <fileKey> <tabletPageNodeId> figma-screenshots/{page}-full-tablet.png --scale 2
+   scripts/figma-rest-image.sh <fileKey> <mobilePageNodeId> figma-screenshots/{page}-full-mobile.png --scale 2
    ```
-6. `PROGRESS.md`에 섹션 목록 추가 (체크박스) — "공통 컴포넌트 먼저" 규칙에 따라
+   섹션별 Tablet/Mobile PNG 는 **Phase 3 섹션 워커가 섹션 구현 시 개별 확보**.
+7. `PROGRESS.md`에 섹션 목록 추가 (체크박스) — "공통 컴포넌트 먼저" 규칙에 따라
    DS 인벤토리에서 식별한 컴포넌트를 Phase 3 맨 앞에 스폰
-7. **사용자 승인 대기** — "이 분해로 진행해도 될까요?"
+8. **사용자 승인 대기** — "이 분해로 진행해도 될까요?"
+   - 반응형 감지 상태가 "⚠ 감지 실패" 또는 "⚠ 매핑 수동 확인 필요" 인 페이지 있으면 이때 재확인
 
 이 단계에서만 사용자 개입 1회.
 
@@ -102,7 +125,7 @@ Agent({
   section_name: {section}
   page_name: {page}
   figma_file_key: {fileKey}
-  figma_node_id: {nodeId}
+  figma_node_id: {nodeId}          // Desktop 기준
   route: {route}
   retry_count: 0
   required_imports: (선택) Phase 2 DS 인벤토리에서 이 섹션이 써야 하는 공통 컴포넌트
@@ -110,6 +133,10 @@ Agent({
          { name: "Button",   path: "src/components/ui/Button", variant: "default" }]
     명시된 컴포넌트는 반드시 import해서 사용. 인라인 재구현 금지 (DRY 위반).
     명시 없으면 워커 자율 판단.
+  figma_node_id_tablet: (선택) Phase 2 에서 감지된 이 섹션의 Tablet 뷰포트 nodeId.
+    있으면 워커가 Tier 2 경로로 구현 (Figma Tablet 디자인 충실 반영).
+    없으면 Tier 1 휴리스틱 fallback.
+  figma_node_id_mobile: (선택) 위와 동일, Mobile 뷰포트.
 
   docs/workflow.md 참고. 모든 게이트 PASS 후 결과 JSON 반환.`
 })
