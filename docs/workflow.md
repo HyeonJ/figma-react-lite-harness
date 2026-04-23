@@ -12,18 +12,32 @@
 ## Phase 1 — 부트스트랩
 
 ```bash
+# 기본
 bash scripts/bootstrap.sh <figma-url> [project-name]
+
+# Component/Design System 페이지가 따로 있는 경우 (권장)
+bash scripts/bootstrap.sh <figma-url> [project-name] \
+  --component-url <figma-component-page-url>
 ```
 
 자동 수행:
 1. Vite + React + TS + Tailwind + Router 스캐폴드
-2. `scripts/extract-tokens.sh <fileKey>` 호출 → 토큰 자동 추출
+2. `scripts/extract-tokens.sh <fileKey> [--component-page <nodeId>]` 호출
+   - Component URL 있으면 그 페이지만 스캔 + 레이어명 기반 네이밍 (품질 ↑)
+   - 없으면 전체 파일 빈도 스캔 + 휴리스틱 네이밍 (fallback)
 3. `tokens.css` / `fonts.css` / `tailwind.config.ts @theme` 생성
-4. `docs/token-audit.md` 리포트
+4. `docs/token-audit.md` 리포트 (mode: `component` / `full` 명시)
 5. `docs/project-context.md` 템플릿
 6. `PROGRESS.md` 초기화
 
 **종료 조건**: `docs/token-audit.md` 존재 + `src/styles/tokens.css` 존재 + dev 서버 기동 확인.
+
+### Component 페이지 모드 식별법
+
+Figma 파일의 **페이지 목록** (왼쪽 사이드바)을 보고 다음 이름 중 하나가 있으면 Component 페이지일 확률 높음:
+- `Components`, `Design System`, `Tokens`, `DS`, `UI Kit`, `Styles`, `Foundations`
+
+해당 페이지를 클릭한 상태에서 URL의 `node-id=10-5282` 부분을 복사 (또는 그 URL 전체를 `--component-url` 로 전달). 없으면 생략 가능 — fallback 모드로 작동.
 
 ## Phase 2 — 페이지 분해
 

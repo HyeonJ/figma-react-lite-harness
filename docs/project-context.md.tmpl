@@ -7,6 +7,11 @@
 - **프로젝트명**: {PROJECT_NAME}
 - **Figma URL**: {FIGMA_URL}
 - **fileKey**: {FILE_KEY}
+- **Figma Component Page URL** (선택): _빈 값이면 전체 파일 스캔으로 토큰 추출_
+  - Component / Design System / Tokens 페이지가 따로 있다면 그 페이지 URL 기입
+  - 예: `https://www.figma.com/design/.../?node-id=10-5282`
+  - `bootstrap.sh --component-url <url>` 또는 `extract-tokens.sh <fileKey> --component-page <nodeId>` 로 전달
+- **Component Page Node ID** (선택): _URL의 `node-id=10-5282` → `10:5282` 로 적음_
 - **Desktop 캔버스**: 1440px (또는 1280/1920)
 - **Mobile 캔버스**: 375px (있으면)
 

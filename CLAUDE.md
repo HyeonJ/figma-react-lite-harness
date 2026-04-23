@@ -29,6 +29,7 @@ Figma URL 제공 / "섹션 구현" / "페이지 진행" / "다음 섹션" 요청
 | baseline PNG / 에셋 | `scripts/figma-rest-image.sh` (필수 채널) |
 | 노드 구조 | `get_design_context` 섹션당 1회 또는 REST `/v1/files/.../nodes` |
 | 토큰 | `docs/token-audit.md` (extract-tokens.sh 결과) |
+| Component 페이지 | `docs/project-context.md` 의 `Component Page Node ID` 필드 — 토큰 추출 시 `--component-page` 로 전달 (있으면 네이밍 품질 ↑) |
 
 ## 게이트 (차단)
 

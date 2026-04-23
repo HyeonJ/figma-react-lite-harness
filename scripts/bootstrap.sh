@@ -13,11 +13,17 @@
 #   9. git init + 초기 커밋
 #
 # Usage:
-#   bash bootstrap.sh <figma-url> [project-name]
+#   bash bootstrap.sh <figma-url> [project-name] [--component-url <url>]
 #
 # 인자:
-#   figma-url       Figma 파일 URL (figma.com/design/<fileKey>/... 또는 fileKey 단독)
-#   project-name    (선택) package.json name, default: 현재 디렉토리명
+#   figma-url         Figma 파일 URL (figma.com/design/<fileKey>/... 또는 fileKey 단독)
+#   project-name      (선택) package.json name, default: 현재 디렉토리명
+#
+# 옵션:
+#   --component-url <url>   Figma Component/Design System 페이지 URL.
+#                           지정 시 토큰 추출이 그 페이지만 스캔 + 레이어명 기반 네이밍.
+#                           미지정 시 전체 파일 스캔 (fallback).
+#                           URL 예: https://figma.com/design/ABC/x?node-id=10-5282
 #
 # 환경변수:
 #   FIGMA_TOKEN     필수 (extract-tokens 호출용)
@@ -25,12 +31,46 @@
 
 set -u
 
-FIGMA_URL="${1:-}"
-PROJECT_NAME="${2:-$(basename "$PWD")}"
+FIGMA_URL=""
+PROJECT_NAME=""
+COMPONENT_URL=""
+
+# 인자 파싱: 옵션 + positional 혼합
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --component-url)
+      COMPONENT_URL="$2"
+      shift 2
+      ;;
+    -h|--help)
+      sed -n '2,30p' "$0"
+      exit 0
+      ;;
+    -*)
+      echo "ERROR: unknown option $1" >&2
+      exit 2
+      ;;
+    *)
+      if [ -z "$FIGMA_URL" ]; then
+        FIGMA_URL="$1"
+      elif [ -z "$PROJECT_NAME" ]; then
+        PROJECT_NAME="$1"
+      else
+        echo "ERROR: too many positional args" >&2
+        exit 2
+      fi
+      shift
+      ;;
+  esac
+done
+
+PROJECT_NAME="${PROJECT_NAME:-$(basename "$PWD")}"
 
 if [ -z "$FIGMA_URL" ]; then
-  echo "usage: bootstrap.sh <figma-url-or-fileKey> [project-name]" >&2
-  echo "  예: bootstrap.sh https://figma.com/design/ABC123/Project my-project" >&2
+  echo "usage: bootstrap.sh <figma-url-or-fileKey> [project-name] [--component-url <url>]" >&2
+  echo "  예 (기본):            bootstrap.sh https://figma.com/design/ABC123/Project my-project" >&2
+  echo "  예 (Component 지정):  bootstrap.sh https://figma.com/design/ABC123/Project my-project \\" >&2
+  echo "                        --component-url https://figma.com/design/ABC123/Project?node-id=10-5282" >&2
   exit 2
 fi
 
@@ -43,7 +83,23 @@ else
   FIGMA_URL="https://www.figma.com/design/${FILE_KEY}"
 fi
 
+# Component URL에서 node-id 추출 (있으면)
+COMPONENT_NODE_ID=""
+if [ -n "$COMPONENT_URL" ]; then
+  if [[ "$COMPONENT_URL" =~ node-id=([0-9]+-[0-9]+) ]]; then
+    COMPONENT_NODE_ID="${BASH_REMATCH[1]/-/:}"
+  elif [[ "$COMPONENT_URL" =~ ^[0-9]+[-:][0-9]+$ ]]; then
+    # 순수 nodeId 문자열
+    COMPONENT_NODE_ID="${COMPONENT_URL/-/:}"
+  else
+    echo "WARN: --component-url 에서 node-id 추출 실패. Component 모드 스킵." >&2
+  fi
+fi
+
 echo "[bootstrap] fileKey=${FILE_KEY} project=${PROJECT_NAME}"
+if [ -n "$COMPONENT_NODE_ID" ]; then
+  echo "[bootstrap] component-page nodeId=${COMPONENT_NODE_ID}"
+fi
 
 # HARNESS_DIR 결정
 if [ -z "${HARNESS_DIR:-}" ]; then
@@ -161,9 +217,19 @@ fi
 if [ -z "${FIGMA_TOKEN:-}" ]; then
   echo "  ⚠ FIGMA_TOKEN 미설정 — 토큰 추출 스킵"
   echo "  설정: bash scripts/setup-figma-token.sh"
-  echo "  이후 수동 재실행: bash scripts/extract-tokens.sh ${FILE_KEY}"
+  if [ -n "$COMPONENT_NODE_ID" ]; then
+    echo "  이후 수동 재실행: bash scripts/extract-tokens.sh ${FILE_KEY} --component-page ${COMPONENT_NODE_ID}"
+  else
+    echo "  이후 수동 재실행: bash scripts/extract-tokens.sh ${FILE_KEY}"
+  fi
 else
-  bash scripts/extract-tokens.sh "$FILE_KEY" || echo "  ⚠ extract-tokens 실패 — 수동 재시도 필요"
+  if [ -n "$COMPONENT_NODE_ID" ]; then
+    bash scripts/extract-tokens.sh "$FILE_KEY" --component-page "$COMPONENT_NODE_ID" \
+      || echo "  ⚠ extract-tokens 실패 — 수동 재시도 필요"
+  else
+    bash scripts/extract-tokens.sh "$FILE_KEY" \
+      || echo "  ⚠ extract-tokens 실패 — 수동 재시도 필요"
+  fi
 fi
 
 # ---------- 9. git init + 초기 커밋 ----------
