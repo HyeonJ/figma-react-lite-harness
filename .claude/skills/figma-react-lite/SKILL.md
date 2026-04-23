@@ -59,9 +59,42 @@ bootstrap.sh 내부:
 
 ## Phase 2: 페이지 분해 + DS 인벤토리
 
+### 🔒 사용자 입력 절대 준수 원칙 (최우선)
+
+사용자가 URL 또는 nodeId 를 명시적으로 제공하면 **그 nodeId 가 구현 대상**이다.
+오케가 "더 디자인 페이지처럼 보이는 다른 nodeId" 로 임의 전환하는 것은 금지.
+
+**Phase 2 시작 시 필수 절차**:
+
+1. 사용자 제공 URL 에서 `node-id=X-Y` 추출 → `X:Y` 로 정규화
+2. `docs/project-context.md` 의 **"사용자 지정 시작 nodeId"** 필드에 먼저 기록
+3. 그 nodeId 로 `get_metadata` 조회
+4. **의심 체크** — 다음 중 하나라도 해당하면 **즉시 멈추고 사용자 확인**:
+   - 페이지/노드 이름에 의심 키워드 포함: `Planning`, `Wireframe`, `Draft`, `Scratch`,
+     `Backup`, `Archive`, `Test`, `Components`, `Tokens`, `DS`, `UI Kit`, `Styles`, `Foundations`
+   - 자식 프레임 수 ≤2 (디자인 페이지는 보통 여러 프레임)
+   - 노드 너비 ≤300px 또는 ≥3000px (정상 캔버스 범위 이탈)
+   - 노드 타입이 `DOCUMENT` / `CANVAS` 가 아닌 기타 (예: `COMPONENT_SET`, 혼자 덩그러니)
+
+5. 의심되면 **확인 질문** (이 포맷 그대로):
+
+   ```
+   제공하신 노드 {ID} 는 이름이 '{name}' 이고 {의심 이유}.
+   실제 디자인 페이지가 맞나요? 아니면 파일 내 다른 페이지 후보:
+   - {ID1} = {name1}
+   - {ID2} = {name2}
+   - {ID3} = {name3}
+   중 선택하시겠어요? 또는 "{ID} 맞음" 으로 그대로 진행도 가능합니다.
+   ```
+
+6. 사용자 명시 응답 **전에는** 어떤 페이지도 구현 대상으로 확정 금지
+7. 의심 없음 (이름이 명확한 디자인 페이지) → 바로 아래 단계 1~8 로 진행
+
+---
+
 새 페이지 시작 시 오케스트레이터가 **직접** 수행 (워커 스폰 불필요):
 
-1. 사용자로부터 페이지 Node ID 수령 (또는 `docs/project-context.md`에서 조회)
+1. 사용자로부터 페이지 Node ID 수령 (또는 `docs/project-context.md`에서 조회) — 위 절대 준수 원칙 적용
 2. `get_metadata` 또는 REST `/v1/files/{key}/nodes?ids=<pageNodeId>&depth=3` 으로 섹션 트리 추출
 3. 서브섹션으로 분할하는 조건 (4가지 중 하나라도 해당):
    - 예상 MCP 토큰 > 12K
@@ -291,6 +324,9 @@ git commit -m "feat(section): {page}-{section} 구현 (G4-G8 PASS, opus-assist)"
 - ❌ 직접 섹션 파일 수정 (워커 위임)
 - ❌ **Agent 호출 실패 시 오케가 직접 구현으로 전환** (위 Agent not found 핸들링 준수)
 - ❌ **대체 에이전트(general-purpose 등)로 fallback 스폰** (section-worker 아닌 워커가 스킬 프롬프트를 이해할 수 없음)
+- ❌ **사용자 제공 nodeId 를 오케 임의 판단으로 다른 nodeId 로 교체** (Phase 2 사용자 입력 절대 준수 원칙 위반)
+- ❌ **"이 페이지는 기획용 같다" 같은 이름 기반 추정으로 페이지 자동 전환** (확인 없이 변경 금지)
+- ❌ **사용자 확인 없이 "디자인 페이지로 보이는 것" 자동 선택** (의심 시 반드시 확인 질문)
 - ❌ tokens.css / fonts.css 수정 (extract-tokens.sh만이 쓴다)
 - ❌ 여러 섹션 병렬 스폰 (순차)
 - ❌ 워커 결과를 검증 없이 신뢰 (tests/quality/{section}.json 직접 확인)

@@ -207,6 +207,8 @@ bash scripts/measure-quality.sh <section_name> <section-dir>
 ## 금지
 
 - ❌ 다른 섹션 파일 수정
+- ❌ **오케가 전달한 `figma_node_id` / `figma_node_id_tablet` / `figma_node_id_mobile` 를 임의로 다른 nodeId 로 교체**
+  - 해당 nodeId 가 의심스러우면 즉시 중단 + 오케에 보고. 자체 판단으로 다른 노드 스캔 금지
 - ❌ tokens.css / fonts.css / tailwind.config.ts 수정 (토큰은 extract-tokens.sh만이 쓴다)
 - ❌ research 문서 작성 (lite에서 제거)
 - ❌ 3회 수정 루프 (자체 1회까지만)

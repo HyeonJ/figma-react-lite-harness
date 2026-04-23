@@ -7,11 +7,33 @@
 - **프로젝트명**: {PROJECT_NAME}
 - **Figma URL**: {FIGMA_URL}
 - **fileKey**: {FILE_KEY}
+
+### 🔒 사용자 지정 시작 nodeId (오케스트레이터 준수 필수)
+
+사용자가 제공한 Figma URL 의 `node-id=X-Y` 부분을 `X:Y` 형식으로 기록한다.
+오케스트레이터는 이 nodeId 를 **구현 대상 페이지**로 확정하며, 다른 페이지로
+임의 전환하지 않는다. (SKILL.md Phase 2 "사용자 입력 절대 준수 원칙" 참조)
+
+- **사용자 지정 시작 nodeId**: `{USER_NODE_ID}` ← URL `node-id=X-Y` 에서 추출
+- **감지된 페이지 트리** (오케가 REST `/v1/files/{key}` 으로 조회 후 기록):
+  - `{USER_NODE_ID}` = `{NAME}` ← **사용자 지정, 이 페이지 우선**
+  - `1:3` = `Main_Design` (예시)
+  - `1:4` = `Draft_Design` (예시)
+  - `1:5` = `Planning` (예시)
+  - ...
+
+### Component 페이지 (토큰 추출 전용, 별개)
+
 - **Figma Component Page URL** (선택): _빈 값이면 전체 파일 스캔으로 토큰 추출_
   - Component / Design System / Tokens 페이지가 따로 있다면 그 페이지 URL 기입
   - 예: `https://www.figma.com/design/.../?node-id=10-5282`
   - `bootstrap.sh --component-url <url>` 또는 `extract-tokens.sh <fileKey> --component-page <nodeId>` 로 전달
 - **Component Page Node ID** (선택): _URL의 `node-id=10-5282` → `10:5282` 로 적음_
+
+> ⚠ **시작 nodeId 와 Component Page Node ID 는 별개**. 전자는 구현 대상, 후자는 토큰 추출 소스.
+
+### 캔버스
+
 - **Desktop 캔버스**: 1440px (또는 1280/1920)
 - **Mobile 캔버스**: 375px (있으면)
 
