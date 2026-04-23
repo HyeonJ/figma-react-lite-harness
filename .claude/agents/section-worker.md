@@ -135,6 +135,8 @@ model: sonnet
 | `gap-12` 큰 간격 | `gap-6 md:gap-12` 단계 축소 |
 | `py-24` 큰 패딩 | `py-12 md:py-24` 단계 축소 |
 
+**위 표에 없는 패턴** (masonry, sticky nav, `justify-between` 다수 아이템, 복잡 grid 등): 아래 §자체 점검 전체 통과를 최소 기준으로 **합리적 변환**. 의심스러우면 Mobile 에서 스택 배치로 fallback. 워커가 판단한 근거를 plan/{section}.md 에 1줄 기록.
+
 **금지**:
 - 고정 폭 하드코딩 단독 (`w-[1280px]` 만 있고 대응 없음) → Mobile 가로 스크롤
 - `overflow-visible` 로 큰 요소 유출 (section 기본 `overflow-hidden` 검토)

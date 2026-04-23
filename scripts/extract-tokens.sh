@@ -40,6 +40,9 @@ COMPONENT_PAGE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --component-page)
+      if [ -n "$COMPONENT_PAGE" ]; then
+        echo "[extract-tokens] WARN: --component-page '$2' 가 기존 값 '$COMPONENT_PAGE' 를 덮어씁니다." >&2
+      fi
       COMPONENT_PAGE="$2"
       shift 2
       ;;

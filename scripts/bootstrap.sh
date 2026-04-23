@@ -84,13 +84,22 @@ else
 fi
 
 # Component URL에서 node-id 추출 (있으면)
+# 커버 대상:
+#   - https://figma.com/design/<key>/<name>?node-id=10-5282          (기본)
+#   - https://figma.com/design/<key>/<name>?t=...&node-id=10-5282    (앞 param 존재)
+#   - https://figma.com/design/<key>/<name>?node-id=I10-5282;30-1    (복합 instance)
+#   - https://figma.com/design/<key>/branch/<branchKey>/<name>?...   (branch URL — fileKey 가 branchKey 로 잡힘, 주의)
+#   - 순수 nodeId 문자열: "10:5282", "10-5282", "I10-5282;30-1"
 COMPONENT_NODE_ID=""
 if [ -n "$COMPONENT_URL" ]; then
-  if [[ "$COMPONENT_URL" =~ node-id=([0-9]+-[0-9]+) ]]; then
-    COMPONENT_NODE_ID="${BASH_REMATCH[1]/-/:}"
-  elif [[ "$COMPONENT_URL" =~ ^[0-9]+[-:][0-9]+$ ]]; then
-    # 순수 nodeId 문자열
-    COMPONENT_NODE_ID="${COMPONENT_URL/-/:}"
+  # URL의 node-id 파라미터. 복합 형식(I10-5282;30-1)까지 커버.
+  nodeid_url_re='node-id=([^&#]+)'
+  nodeid_bare_re='^[0-9A-Za-z]+[-:][0-9A-Za-z;-]+$'
+  if [[ "$COMPONENT_URL" =~ $nodeid_url_re ]]; then
+    COMPONENT_NODE_ID="${BASH_REMATCH[1]//-/:}"
+  elif [[ "$COMPONENT_URL" =~ $nodeid_bare_re ]]; then
+    # 순수 nodeId 문자열 (dash → colon 변환)
+    COMPONENT_NODE_ID="${COMPONENT_URL//-/:}"
   else
     echo "WARN: --component-url 에서 node-id 추출 실패. Component 모드 스킵." >&2
   fi

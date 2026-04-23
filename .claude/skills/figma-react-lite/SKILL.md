@@ -142,6 +142,38 @@ Agent({
 })
 ```
 
+### 실제 스폰 prompt 샘플 (선택 필드 전부 사용)
+
+완전 반응형 페이지의 섹션 + DS 인벤토리 컴포넌트 2개 강제 import 케이스:
+
+```
+Agent({
+  subagent_type: "section-worker",
+  description: "home-hero 구현",
+  prompt: `섹션을 4단계로 처리하라.
+
+  section_name: home-hero
+  page_name: home
+  figma_file_key: pJM7yrpPrjb9roV0lNAbKK
+  figma_node_id: 1:259               // Desktop
+  route: /
+  retry_count: 0
+  required_imports: [
+    { name: "Wordmark", path: "src/components/ui/Wordmark" },
+    { name: "CtaButton", path: "src/components/ui/CtaButton", variant: "primary" }
+  ]
+  figma_node_id_tablet: 1:370        // Phase 2 에서 감지됨
+  figma_node_id_mobile: 1:371        // Phase 2 에서 감지됨
+
+  docs/workflow.md 참고. 모든 게이트 PASS 후 결과 JSON 반환.`
+})
+```
+
+**선택 필드 전달 규칙**:
+- `required_imports` 없으면 그 줄 자체 생략 (빈 배열 `[]` 금지)
+- `figma_node_id_tablet` / `figma_node_id_mobile` 없으면 그 줄 자체 생략
+- 셋 중 하나만 있어도 됨 (예: Tablet 만 있고 Mobile 없으면 `figma_node_id_mobile` 줄 생략)
+
 ### 워커 반환 결과 처리
 
 **PASS (모든 게이트 통과)**:
