@@ -25,13 +25,24 @@
 | 도구 | 설치 방법 |
 |------|-----------|
 | **Node 18+** | [nodejs.org](https://nodejs.org) LTS (v20+) 다운로드. nvm/volta 써도 무방 |
-| **bash** | Windows: [Git for Windows](https://git-scm.com/download/win) 에 Git Bash 포함 / macOS·Linux: 기본 포함 |
+| **bash** | Windows: [Git for Windows](https://git-scm.com/download/win) 설치 시 `bash.exe` 자동 PATH 등록 / macOS·Linux: 기본 포함 |
 | **git** | 위 Git for Windows 또는 `brew install git` / `apt install git` |
 | **curl** | 대부분 내장. 없으면 OS 패키지 매니저 |
 
-확인:
+### Windows: 어느 셸을 써도 됩니다
+
+Git for Windows를 설치하면 `bash.exe` 가 PATH에 등록되므로 **PowerShell / cmd / Git Bash 어디서든** `bash scripts/xxx.sh` 호출 가능. 이 문서의 `bash` 명령은 전부 그대로 사용 가능.
+
+**셸별 차이가 나는 건 3가지뿐**:
+1. 환경변수 확인/설정 문법 (`$var` vs `$env:var` vs `%var%`)
+2. `claude mcp add` 의 토큰 변수 전개 (`$FIGMA_TOKEN` vs `$env:FIGMA_TOKEN`)
+3. 쉘 내장 명령 (예: `which` vs `where.exe`)
+
+자세한 대조표는 본 문서 마지막 **[§8 Windows 셸별 명령어 대조](#8-windows-셸별-명령어-대조)** 참고.
+
+확인 (**어떤 셸에서든 동일**):
 ```bash
-node -v        # v20.x.x 이상
+node -v
 npm -v
 bash --version
 git --version
@@ -76,13 +87,24 @@ claude --version    # 0.x.x
 
 > **전제**: §4 에서 `FIGMA_TOKEN` 을 먼저 등록해야 MCP가 제대로 동작. 순서상 §4 먼저 한 뒤 §3 로 돌아와도 OK.
 
-### 등록 명령 (한 줄)
+### 등록 명령 (셸별)
 
+**Git Bash / macOS / Linux**:
 ```bash
 claude mcp add figma-developer-mcp -- npx -y figma-developer-mcp --figma-api-key=$FIGMA_TOKEN --stdio
 ```
 
-Windows Git Bash에서는 `$FIGMA_TOKEN` 전개가 동작. PowerShell에서는 `$env:FIGMA_TOKEN`.
+**PowerShell**:
+```powershell
+claude mcp add figma-developer-mcp -- npx -y figma-developer-mcp --figma-api-key=$env:FIGMA_TOKEN --stdio
+```
+
+**cmd**:
+```cmd
+claude mcp add figma-developer-mcp -- npx -y figma-developer-mcp --figma-api-key=%FIGMA_TOKEN% --stdio
+```
+
+⚠ 어느 경우든 FIGMA_TOKEN 이 **현재 셸 세션에 로드돼 있어야** 함. `setx`로 막 등록한 후라면 새 터미널 세션을 먼저 열어야 전개 가능.
 
 ### 확인
 
@@ -135,10 +157,16 @@ bash scripts/setup-figma-token.sh
 
 ### 4.3 전역 env var 등록 — 수동 (스크립트 실패 시)
 
-**Windows PowerShell**:
+**Windows PowerShell** (권장):
 ```powershell
 [Environment]::SetEnvironmentVariable('FIGMA_TOKEN', 'figd_여기에토큰', 'User')
 ```
+
+**Windows cmd**:
+```cmd
+setx FIGMA_TOKEN figd_여기에토큰
+```
+> `setx`는 **현재 세션에 미반영**. 등록 후 반드시 새 cmd/PowerShell 세션 열어야 적용.
 
 **macOS / Linux**:
 ```bash
@@ -150,15 +178,22 @@ source ~/.zshrc
 
 **새 터미널을 열어야** 적용됨.
 
-```bash
-# Windows Git Bash
-powershell -Command "[Environment]::GetEnvironmentVariable('FIGMA_TOKEN', 'User')" | head -c 20
-
-# Unix
-printenv FIGMA_TOKEN | head -c 20
+**PowerShell**:
+```powershell
+$env:FIGMA_TOKEN.Substring(0,10)
 ```
 
-`figd_` 로 시작하는 20자 정도가 보이면 OK.
+**cmd**:
+```cmd
+echo %FIGMA_TOKEN:~0,10%
+```
+
+**Git Bash / macOS / Linux**:
+```bash
+printenv FIGMA_TOKEN | head -c 10
+```
+
+`figd_` 로 시작하는 10자가 보이면 OK.
 
 ### 4.5 보안 주의
 
@@ -267,6 +302,58 @@ claude
 | `extract-tokens.sh` 에서 JSON 파싱 에러 | 파일 접근 권한 없음 또는 fileKey 오타 | URL 다시 확인, PAT 권한 확인 |
 | Claude Code에서 MCP 응답 없음 | Figma MCP 서버 프로세스 문제 | Claude Code 재시작 |
 | bootstrap 후 빌드 실패 | Node 버전 문제 | Node 18+ 확인, `node_modules/` 지우고 재설치 |
+
+## §8 Windows 셸별 명령어 대조
+
+하네스의 `.sh` 스크립트는 PowerShell/cmd/Git Bash **어느 셸에서 호출하든 동일하게 동작**(내부적으로 bash.exe가 처리). 셸 고유 문법이 필요한 건 **환경변수·변수 전개·일부 유틸리티**뿐.
+
+### 환경변수
+
+| 작업 | Git Bash / macOS / Linux | PowerShell | cmd |
+|------|--------------------------|------------|-----|
+| 값 확인 | `echo "$FIGMA_TOKEN"` | `echo $env:FIGMA_TOKEN` | `echo %FIGMA_TOKEN%` |
+| prefix 10자 | `printenv FIGMA_TOKEN \| head -c 10` | `$env:FIGMA_TOKEN.Substring(0,10)` | `echo %FIGMA_TOKEN:~0,10%` |
+| 현재 세션 설정 | `export FIGMA_TOKEN=figd_...` | `$env:FIGMA_TOKEN='figd_...'` | `set FIGMA_TOKEN=figd_...` |
+| 영구 등록 (User scope) | `echo 'export FIGMA_TOKEN=...' >> ~/.bashrc` | `[Environment]::SetEnvironmentVariable('FIGMA_TOKEN','figd_...','User')` | `setx FIGMA_TOKEN figd_...` |
+| 영구 등록 해제 | `sed -i '/FIGMA_TOKEN/d' ~/.bashrc` | `[Environment]::SetEnvironmentVariable('FIGMA_TOKEN',$null,'User')` | `setx FIGMA_TOKEN ""` |
+
+### 스크립트 실행
+
+모든 셸에서 동일하게 `.sh` 파일을 호출 가능 (bash.exe가 PATH에 있으면):
+
+| 셸 | 명령 |
+|----|------|
+| Git Bash | `bash scripts/doctor.sh` |
+| PowerShell | `bash scripts/doctor.sh` (동일) |
+| cmd | `bash scripts/doctor.sh` (동일) |
+
+PATH에 bash가 없다면 전체 경로:
+```powershell
+& "C:\Program Files\Git\bin\bash.exe" scripts/doctor.sh
+```
+
+### 토큰 변수 전개 (claude mcp add)
+
+| 셸 | 명령 |
+|----|------|
+| Git Bash | `claude mcp add figma-developer-mcp -- npx -y figma-developer-mcp --figma-api-key=$FIGMA_TOKEN --stdio` |
+| PowerShell | `claude mcp add figma-developer-mcp -- npx -y figma-developer-mcp --figma-api-key=$env:FIGMA_TOKEN --stdio` |
+| cmd | `claude mcp add figma-developer-mcp -- npx -y figma-developer-mcp --figma-api-key=%FIGMA_TOKEN% --stdio` |
+
+### 디렉토리/파일 명령 (자주 쓰는 것)
+
+| 작업 | bash | PowerShell | cmd |
+|------|------|------------|-----|
+| 디렉토리 이동 | `cd /c/Dev/Workspace/...` | `cd C:\Dev\Workspace\...` | `cd C:\Dev\Workspace\...` |
+| 디렉토리 생성 | `mkdir -p foo/bar` | `mkdir foo\bar -Force` | `mkdir foo\bar` |
+| 파일 내용 보기 | `cat file.txt` | `Get-Content file.txt` / `cat file.txt` | `type file.txt` |
+| 명령 위치 확인 | `which node` | `Get-Command node` / `where.exe node` | `where node` |
+
+### 추천
+
+**Windows 사용자**: PowerShell을 기본 셸로 쓰되, `.sh` 스크립트가 필요한 경우 PowerShell 안에서 그대로 `bash scripts/xxx.sh` 호출. 셸을 바꿔 가며 작업할 필요 없음.
+
+---
 
 ## 관련 문서
 

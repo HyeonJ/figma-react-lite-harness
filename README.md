@@ -41,6 +41,8 @@ bash scripts/doctor.sh
 
 ### 사전 준비
 
+> Windows에서는 **PowerShell / cmd / Git Bash 어느 셸에서든** 동일하게 실행 가능. `.sh` 호출은 내부적으로 `bash.exe` (Git for Windows 설치 시 자동 PATH 등록)가 처리. 자세한 셸별 명령 대조는 [docs/SETUP.md §8](./docs/SETUP.md#8-windows-셸별-명령어-대조).
+
 ```bash
 # 0. 환경 셋업 (최초 1회) — 상세는 docs/SETUP.md
 #    Node / Claude Code CLI / Figma MCP / FIGMA_TOKEN 준비
@@ -48,7 +50,7 @@ bash scripts/doctor.sh
 # 1. 하네스 clone (한 번만)
 git clone https://github.com/HyeonJ/figma-react-lite-harness.git C:/Dev/Workspace/figma-react-lite-harness
 
-# 2. (최초 1회) FIGMA_TOKEN 등록
+# 2. (최초 1회) FIGMA_TOKEN 등록 — 대화형
 bash C:/Dev/Workspace/figma-react-lite-harness/scripts/setup-figma-token.sh
 
 # 3. 환경 확인
