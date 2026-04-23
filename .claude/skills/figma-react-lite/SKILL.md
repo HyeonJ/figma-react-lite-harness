@@ -180,15 +180,37 @@ git commit -m "feat(section): {page}-{section} 구현 (G4-G8 PASS, opus-assist)"
 
 | 상황 | 대응 |
 |---|---|
+| **Agent not found (section-worker)** | **즉시 중단 + 사용자에게 보고**. "`.claude/agents/section-worker.md` 파일은 존재하나 현재 Claude 세션의 Agent 레지스트리에 노출되지 않음. 세션을 시작한 후 bootstrap이 돌아 에이전트 파일이 추가된 경우 이런 상태가 됩니다. `/exit` 후 `claude` 재시작을 요청" — 오케가 직접 구현으로 대체 금지 |
 | FIGMA_TOKEN 미설정 | 사용자에게 env var 설정 안내, 워커 스폰 중단 |
 | token-audit.md 없음 | `scripts/extract-tokens.sh` 먼저 실행 |
 | 워커 2회 FAIL | Opus 승격 / 수동 / 스킵 / 재분할 선택지 제시 |
 | Figma MCP 쿼터 소진 | REST API로 대체 안내 (워커가 자동 처리) |
 | git conflict | 섹션 단위 원자성으로 드물지만, 발생 시 사용자 수동 처리 |
 
+### Agent not found 시 판단 흐름
+
+```
+1. Agent 도구 호출 → "Agent type 'section-worker' not found" 에러
+2. 오케는 즉시 중단. 다음 행동 금지:
+   - ❌ 오케가 직접 섹션 파일 수정 시작
+   - ❌ 다른 에이전트(general-purpose 등)로 fallback
+   - ❌ "Available agents에 없으니 직접 진행" 같은 임의 판단
+3. 사용자에게 보고 (정확한 포맷):
+   "❌ section-worker 에이전트가 현재 세션에서 인식되지 않습니다.
+    .claude/agents/section-worker.md 파일은 존재하지만 Agent 레지스트리가
+    세션 시작 시점에 동결된 상태입니다. 다음을 수행해 주세요:
+    1. /exit 로 현재 세션 종료
+    2. 같은 디렉토리에서 `claude` 재시작
+    3. 새 세션에서 섹션 진행 지시 반복
+    이 세션에서는 더 이상 작업을 진행하지 않습니다."
+4. 사용자 재지시 대기. 직접 구현 절대 금지.
+```
+
 ## 금지
 
 - ❌ 직접 섹션 파일 수정 (워커 위임)
+- ❌ **Agent 호출 실패 시 오케가 직접 구현으로 전환** (위 Agent not found 핸들링 준수)
+- ❌ **대체 에이전트(general-purpose 등)로 fallback 스폰** (section-worker 아닌 워커가 스킬 프롬프트를 이해할 수 없음)
 - ❌ tokens.css / fonts.css 수정 (extract-tokens.sh만이 쓴다)
 - ❌ 여러 섹션 병렬 스폰 (순차)
 - ❌ 워커 결과를 검증 없이 신뢰 (tests/quality/{section}.json 직접 확인)

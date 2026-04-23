@@ -64,10 +64,24 @@ npm install -g @anthropic-ai/claude-code
 ```
 
 ### 로그인
+
+최초 실행 (인증만 하고 바로 종료하고 싶을 때):
 ```bash
 claude
-# 최초 실행 시 브라우저 OAuth 또는 API 키 입력 안내
+# 브라우저 OAuth 또는 API 키 입력 안내
 ```
+
+### 세션 실행 — 하네스 작업 시
+
+```bash
+claude --dangerously-skip-permissions
+```
+
+> **`--dangerously-skip-permissions` 권장 이유**
+> 하네스는 섹션마다 파일 생성·git 커밋·bash 스크립트 호출·MCP 호출을 반복합니다. 권한 프롬프트가 매번 떠서 자율 흐름이 끊깁니다. 로컬 개발 환경에서는 플래그 사용이 일반적. 단 다음 경우엔 플래그 없이:
+> - 회사 공유 PC / 보안 이슈 환경
+> - 신뢰하지 않는 프롬프트/스킬 실행
+> - 디버깅 중 (각 도구 호출을 단계별 확인하고 싶을 때)
 
 요금제 확인:
 - **Max $200 (20x)**: Opus 여유
@@ -283,9 +297,15 @@ mkdir ~/workspace/my-new-project
 cd ~/workspace/my-new-project
 
 # 2. Claude Code 세션
-claude
+claude --dangerously-skip-permissions
 
 # 3. 세션 안에서 README.md §1 부트스트랩 프롬프트 복붙
+
+# 4. (중요) 부트스트랩 완료 후 /exit → 재시작
+#    이유: Claude Code는 세션 시작 시점에만 .claude/agents/ 를 스캔.
+#    같은 세션에서 이어서 섹션 진행 시 'section-worker not found' 에러.
+/exit
+claude --dangerously-skip-permissions
 ```
 
 이후는 루트 [README.md](../README.md) §1~§5 참조.

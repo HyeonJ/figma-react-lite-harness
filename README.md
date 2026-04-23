@@ -61,8 +61,10 @@ mkdir C:/Dev/Workspace/my-new-project
 cd C:/Dev/Workspace/my-new-project
 
 # 5. Claude Code 세션 오픈
-claude
+claude --dangerously-skip-permissions
 ```
+
+> **`--dangerously-skip-permissions` 사용 이유**: 하네스가 섹션마다 파일 생성·git 커밋·bash 스크립트 호출을 반복하므로 권한 프롬프트가 자주 뜸. 로컬 개발 환경에서 자동화 흐름을 유지하기 위해 플래그 권장. 공유 환경이나 신뢰할 수 없는 프롬프트 실행 시엔 플래그 없이 사용.
 
 ### 프롬프트 — 부트스트랩 위임
 
@@ -90,6 +92,21 @@ Claude가 수행하는 것:
 3. 토큰 추출 결과 요약 보고
 
 **산출물**: `src/styles/tokens.css` / `fonts.css` / `docs/token-audit.md` / `docs/project-context.md` / `PROGRESS.md` / Vite 스캐폴드
+
+### ⚠ 부트스트랩 직후 **반드시 Claude 세션 재시작**
+
+bootstrap.sh 가 `.claude/agents/section-worker.md` 와 `.claude/skills/figma-react-lite/` 를 프로젝트에 복사하지만, Claude Code는 **세션 시작 시점**에만 에이전트/스킬 레지스트리를 스캔합니다. 같은 세션에서 바로 §2·§3 프롬프트를 호출하면 `Agent type 'section-worker' not found` 에러가 나며, 최악의 경우 오케스트레이터가 규칙을 위반한 채 직접 구현으로 전환합니다.
+
+**필수 절차**:
+```bash
+# 부트스트랩 완료 후 현재 세션에서
+/exit
+
+# 같은 디렉토리에서 재시작
+claude --dangerously-skip-permissions
+```
+
+재시작 후 새 세션에서 §2 또는 §3 프롬프트 진입.
 
 ---
 
