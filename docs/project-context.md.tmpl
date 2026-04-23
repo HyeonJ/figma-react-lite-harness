@@ -27,6 +27,28 @@
 | Footer | `src/components/layout/Footer.tsx` | ??:?? | 전체 | [ ] |
 | CtaButton | `src/components/ui/CtaButton.tsx` | ??:?? | 다수 | [ ] |
 
+### ⚠️ 놓치기 쉬운 브랜드 요소 (Phase 2 필수 체크)
+
+로고/워드마크/아이콘/반복 문구처럼 **3+ 섹션에 반복 등장**하는 요소는 Figma에서 심볼이
+아니어도 공통 컴포넌트로 뽑는다. 이 단계를 놓치면 섹션 워커들이 각자 인라인으로 재구현
+해서 사후 리팩터가 필요해진다(예: 로고를 Nav에선 `<a>text</a>`, Footer에선 `<p>text</p>`,
+Header에선 `<img>` 로 각각 구현).
+
+Phase 2 분해 시 다음을 반드시 확인:
+
+- [ ] 로고 / 브랜드 워드마크 (텍스트 타이포 포함 — Figma 심볼이 아니어도 컴포넌트화)
+- [ ] 반복 아이콘 (화살표, 체크, SNS 등)
+- [ ] 반복 문구 (회사명, 태그라인, "Find near you" 같은 CTA 라벨)
+- [ ] 반복 패턴 컨테이너 (ProductCard, ListItem 등 3+ 반복)
+
+| 컴포넌트 | 위치 | 재사용 섹션 | 상태 |
+|---------|------|-------------|------|
+| Wordmark | `src/components/ui/Wordmark.tsx` | nav, footer, header | [ ] |
+| (추가) | | | [ ] |
+
+식별한 항목은 위 "3. 공통 컴포넌트 카탈로그" 테이블에 합쳐 기록하고, 섹션별로 강제
+import가 필요하면 Phase 3 워커 spawn 시 `required_imports` 로 전달.
+
 ## 4. 페이지별 섹션 분해 (Phase 2 산출)
 
 ### Home (`/`)
