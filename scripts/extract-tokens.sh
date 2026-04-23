@@ -31,19 +31,15 @@ if [ -z "$FILE_KEY" ]; then
   exit 2
 fi
 
-# FIGMA_TOKEN 로드
-if [ -z "${FIGMA_TOKEN:-}" ]; then
-  if command -v powershell >/dev/null 2>&1; then
-    FIGMA_TOKEN=$(powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('FIGMA_TOKEN', 'User')" 2>/dev/null | tr -d '\r\n')
-  fi
-fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib/load-figma-token.sh"
 
 if [ -z "${FIGMA_TOKEN:-}" ]; then
   echo "ERROR: FIGMA_TOKEN 미설정." >&2
+  echo "  bash scripts/setup-figma-token.sh 로 대화형 등록" >&2
   exit 2
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p src/styles docs tmp
 
 # ---------- Figma REST /v1/files 호출 ----------

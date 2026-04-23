@@ -71,17 +71,13 @@ fi
 NODE_ID="${NODE_ID/-/:}"
 
 # ---------- FIGMA_TOKEN 로드 ----------
-if [ -z "${FIGMA_TOKEN:-}" ]; then
-  # Windows 환경: powershell User scope에서 로드 시도
-  if command -v powershell >/dev/null 2>&1; then
-    FIGMA_TOKEN=$(powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('FIGMA_TOKEN', 'User')" 2>/dev/null | tr -d '\r\n')
-  fi
-fi
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+. "${SCRIPT_DIR}/_lib/load-figma-token.sh"
 
 if [ -z "${FIGMA_TOKEN:-}" ]; then
   echo "ERROR: FIGMA_TOKEN 미설정." >&2
-  echo "  Windows: [Environment]::SetEnvironmentVariable('FIGMA_TOKEN', 'figd_...', 'User')" >&2
-  echo "  Unix:    export FIGMA_TOKEN=figd_..." >&2
+  echo "  bash scripts/setup-figma-token.sh 로 대화형 등록" >&2
+  echo "  또는 수동 등록 후 새 터미널 세션" >&2
   exit 2
 fi
 

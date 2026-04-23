@@ -56,6 +56,19 @@ if [ ! -d "$HARNESS_DIR/templates/vite-react-ts" ]; then
   exit 3
 fi
 
+# ---------- 환경 선행 체크 (doctor.sh) ----------
+# 필수 도구가 없으면 bootstrap 중단. 선택 도구 경고는 무시.
+if [ -f "$HARNESS_DIR/scripts/doctor.sh" ]; then
+  echo "[bootstrap] 선행 환경 체크 (doctor.sh)"
+  if ! bash "$HARNESS_DIR/scripts/doctor.sh" 2>&1 | tee /tmp/bootstrap-doctor.log | tail -20; then
+    echo "" >&2
+    echo "ERROR: 필수 환경 미비. 위 출력의 [✗] 항목을 해결한 후 재실행하세요." >&2
+    echo "  docs/SETUP.md 참고." >&2
+    exit 4
+  fi
+  echo ""
+fi
+
 # 현재 디렉토리 비어있는지 확인 (node_modules 제외)
 EXISTING=$(find . -maxdepth 1 -mindepth 1 ! -name node_modules ! -name ".git" 2>/dev/null | wc -l)
 if [ "$EXISTING" -gt 0 ]; then
@@ -100,14 +113,17 @@ cp -r "$HARNESS_DIR/.claude/skills" .claude/
 
 # ---------- 4. scripts/ 복사 (프로젝트에서도 직접 호출할 수 있도록) ----------
 echo "[bootstrap] 4/9 scripts/ 복사"
-mkdir -p scripts
+mkdir -p scripts/_lib
+cp "$HARNESS_DIR/scripts/_lib/load-figma-token.sh" scripts/_lib/
 cp "$HARNESS_DIR/scripts/figma-rest-image.sh" scripts/
 cp "$HARNESS_DIR/scripts/extract-tokens.sh" scripts/
 cp "$HARNESS_DIR/scripts/_extract-tokens-analyze.mjs" scripts/
 cp "$HARNESS_DIR/scripts/check-text-ratio.mjs" scripts/
 cp "$HARNESS_DIR/scripts/check-token-usage.mjs" scripts/
 cp "$HARNESS_DIR/scripts/measure-quality.sh" scripts/
-chmod +x scripts/*.sh scripts/*.mjs 2>/dev/null || true
+cp "$HARNESS_DIR/scripts/doctor.sh" scripts/
+cp "$HARNESS_DIR/scripts/setup-figma-token.sh" scripts/
+chmod +x scripts/*.sh scripts/*.mjs scripts/_lib/*.sh 2>/dev/null || true
 
 # ---------- 5. docs/ 복사 ----------
 echo "[bootstrap] 5/9 docs/ 복사"
@@ -136,14 +152,15 @@ fi
 
 # ---------- 8. extract-tokens 자동 호출 ----------
 echo "[bootstrap] 8/9 extract-tokens.sh 실행 (Figma 토큰 추출)"
-if [ -z "${FIGMA_TOKEN:-}" ] && command -v powershell >/dev/null 2>&1; then
-  FIGMA_TOKEN=$(powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('FIGMA_TOKEN', 'User')" 2>/dev/null | tr -d '\r\n')
-  export FIGMA_TOKEN
+# _lib/load-figma-token.sh 은 scripts/ 복사 직후 사용 가능
+if [ -f "scripts/_lib/load-figma-token.sh" ]; then
+  . scripts/_lib/load-figma-token.sh
 fi
 
 if [ -z "${FIGMA_TOKEN:-}" ]; then
   echo "  ⚠ FIGMA_TOKEN 미설정 — 토큰 추출 스킵"
-  echo "  설정 후 수동 실행: bash scripts/extract-tokens.sh ${FILE_KEY}"
+  echo "  설정: bash scripts/setup-figma-token.sh"
+  echo "  이후 수동 재실행: bash scripts/extract-tokens.sh ${FILE_KEY}"
 else
   bash scripts/extract-tokens.sh "$FILE_KEY" || echo "  ⚠ extract-tokens 실패 — 수동 재시도 필요"
 fi
