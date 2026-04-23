@@ -9,7 +9,17 @@ module.exports = {
     "plugin:react-hooks/recommended",
     "plugin:jsx-a11y/recommended",
   ],
-  ignorePatterns: ["dist", "node_modules", ".eslintrc.cjs", "vite.config.ts", "tailwind.config.ts", "postcss.config.js"],
+  ignorePatterns: [
+    "dist",
+    "node_modules",
+    ".eslintrc.cjs",
+    "vite.config.ts",
+    "tailwind.config.ts",
+    "postcss.config.js",
+    "scripts",        // 프로젝트에 복사되는 하네스 스크립트. Node context라 browser env와 맞지 않음
+    "tmp",
+    "figma-screenshots",
+  ],
   parser: "@typescript-eslint/parser",
   plugins: ["jsx-a11y", "react"],
   settings: {

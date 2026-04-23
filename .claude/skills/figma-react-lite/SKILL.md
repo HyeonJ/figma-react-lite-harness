@@ -63,7 +63,11 @@ bootstrap.sh 내부:
 
 1. 사용자로부터 페이지 Node ID 수령 (또는 `docs/project-context.md`에서 조회)
 2. `get_metadata` 또는 REST `/v1/files/{key}/nodes?ids=<pageNodeId>&depth=3` 으로 섹션 트리 추출
-3. 12K 토큰 초과 섹션은 서브섹션으로 분할 (4조건: 토큰·이질 에셋·반복 자식·blend/transform)
+3. 서브섹션으로 분할하는 조건 (4가지 중 하나라도 해당):
+   - 예상 MCP 토큰 > 12K
+   - 이질적 에셋 타입 3+ 혼재 (텍스트·raster·SVG·interactive)
+   - 반복 자식 3+ (카드·탭·item 등)
+   - 섹션 내 blend mode / 복잡 transform 가진 요소 3+
 4. **DS 인벤토리 — 브랜드 요소 전수조사** (lite 정체성 유지를 위해 **체크리스트만**, 신규 게이트 없음)
    - Figma 전체에서 **3+ 섹션에 반복 등장**하는 요소 식별:
      - 로고 / 워드마크 (텍스트 타이포도 포함 — Figma 심볼이 아니어도 공통화)
@@ -134,8 +138,25 @@ Agent({
 ### 섹션 진행 순서
 
 1. **공통 컴포넌트 먼저** — Header/Footer 같은 5페이지 공통
-2. **Phase 2에서 식별된 신규 공통 컴포넌트**
+2. **Phase 2에서 식별된 신규 공통 컴포넌트** (`src/components/ui/`)
 3. **페이지 섹션** — 위→아래 순서
+
+### 공통 컴포넌트 동기화 규칙 (병렬 작업 시 필수)
+
+`required_imports` 에 명시된 공통 컴포넌트는 **그 파일이 리포에 실재해야** 워커가 import할 수 있다. 병렬 작업 환경에서 다음 규칙을 반드시 지켜라:
+
+**규칙 1. 공통 컴포넌트 섹션은 단일 워커가 먼저 완료**
+- `Wordmark`, `Button`, `CtaButton` 같은 공통 컴포넌트를 생성하는 섹션 워커가 **먼저 커밋/머지**
+- 이후 이 컴포넌트를 `required_imports`로 참조하는 섹션들을 병렬 스폰
+
+**규칙 2. 팀원에게 작업 분배 시 검사**
+- 팀원 A에게 `home-header` 할당 (Wordmark 생성 담당)
+- 팀원 B에게 `home-footer` 할당하려면 → **home-header PR이 머지된 뒤에** 시작
+- PROGRESS.md에 `[⏳ blocked by home-header]` 표기로 동기화
+
+**규칙 3. 오케가 병렬 스폰 안전 검사**
+- 새 섹션 스폰 전: `required_imports`의 각 `path` 가 실제 존재하는지 파일 시스템 확인
+- 누락된 의존 컴포넌트가 있으면 **그 섹션을 pending 큐에 두고** 선행 섹션 완료 후 재시도
 
 ## Phase 4: 페이지 통합 검증
 

@@ -58,9 +58,10 @@ fi
 
 # ---------- 환경 선행 체크 (doctor.sh) ----------
 # 필수 도구가 없으면 bootstrap 중단. 선택 도구 경고는 무시.
+# --skip-project: bootstrap은 빈 프로젝트 디렉토리에서 실행되므로 §5 프로젝트 체크 생략.
 if [ -f "$HARNESS_DIR/scripts/doctor.sh" ]; then
-  echo "[bootstrap] 선행 환경 체크 (doctor.sh)"
-  if ! bash "$HARNESS_DIR/scripts/doctor.sh" 2>&1 | tee /tmp/bootstrap-doctor.log | tail -20; then
+  echo "[bootstrap] 선행 환경 체크 (doctor.sh --skip-project)"
+  if ! bash "$HARNESS_DIR/scripts/doctor.sh" --skip-project 2>&1 | tee /tmp/bootstrap-doctor.log | tail -20; then
     echo "" >&2
     echo "ERROR: 필수 환경 미비. 위 출력의 [✗] 항목을 해결한 후 재실행하세요." >&2
     echo "  docs/SETUP.md 참고." >&2

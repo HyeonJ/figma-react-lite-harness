@@ -5,7 +5,7 @@
 ## 핵심 원칙
 
 1. **작업 단위 = 섹션.** 한 섹션 = 한 브랜치 = 한 커밋
-2. **디자인 토큰이 진실의 원천.** `src/styles/tokens.css`를 쓰고, hex literal 직접 기입 금지
+2. **디자인 토큰이 진실의 원천.** `src/styles/tokens.css`를 쓰고, hex literal 직접 기입 금지 (예외: `#fff`/`#000` 중립값 허용 — G4 화이트리스트 참조)
 3. **게이트 PASS 없이 커밋 금지.** G4/G5/G6/G8 전부 통과 필요
 4. **Figma 에셋은 REST API로 다운로드.** CSS 유니코드로 대체 금지
 5. **Framelink MCP 호출 금지** (영구 폐기)

@@ -114,7 +114,18 @@ case "$OS" in
     fi
     ;;
   Darwin|Linux)
-    # macOS / Linux — shell rc 에 export 추가
+    # macOS / Linux — 보안 개선: 토큰 값은 ~/.config/figma-react-lite/token (mode 600) 에 저장.
+    # rc 파일에는 "파일에서 읽어오는" export 만 기록 → rc 파일 자체를 읽어도 토큰 평문 노출 안 됨.
+    TOKEN_DIR="$HOME/.config/figma-react-lite"
+    TOKEN_FILE="$TOKEN_DIR/token"
+    mkdir -p "$TOKEN_DIR"
+    chmod 700 "$TOKEN_DIR"
+    # 토큰 값만 저장 (newline 없이)
+    printf '%s' "$FIGMA_TOKEN" > "$TOKEN_FILE"
+    chmod 600 "$TOKEN_FILE"
+    echo "      ✓ ${TOKEN_FILE} (mode 600) 에 토큰 값 저장"
+
+    # rc 파일 선택
     RC=""
     if [ -n "${ZSH_VERSION:-}" ] || [ "${SHELL##*/}" = "zsh" ]; then
       RC="$HOME/.zshrc"
@@ -124,19 +135,22 @@ case "$OS" in
       RC="$HOME/.profile"
     fi
 
-    if grep -q "^export FIGMA_TOKEN=" "$RC" 2>/dev/null; then
-      # 기존 줄 교체 (BSD sed / GNU sed 호환)
+    RC_LINE="export FIGMA_TOKEN=\"\$(cat ~/.config/figma-react-lite/token 2>/dev/null)\""
+
+    if grep -q "FIGMA_TOKEN" "$RC" 2>/dev/null; then
+      # 기존 줄(평문이든 파일참조든) 교체
       if sed --version >/dev/null 2>&1; then
-        sed -i "s|^export FIGMA_TOKEN=.*|export FIGMA_TOKEN='${FIGMA_TOKEN}'|" "$RC"
+        sed -i "/export FIGMA_TOKEN=/c\\${RC_LINE}" "$RC"
       else
-        sed -i '' "s|^export FIGMA_TOKEN=.*|export FIGMA_TOKEN='${FIGMA_TOKEN}'|" "$RC"
+        sed -i '' "/export FIGMA_TOKEN=/c\\
+${RC_LINE}" "$RC"
       fi
-      echo "      ✓ ${RC} 의 기존 FIGMA_TOKEN 교체"
+      echo "      ✓ ${RC} 의 기존 FIGMA_TOKEN 줄을 파일참조형으로 교체"
     else
       echo "" >> "$RC"
       echo "# figma-react-lite-harness" >> "$RC"
-      echo "export FIGMA_TOKEN='${FIGMA_TOKEN}'" >> "$RC"
-      echo "      ✓ ${RC} 에 export 추가"
+      echo "$RC_LINE" >> "$RC"
+      echo "      ✓ ${RC} 에 파일참조 export 추가"
     fi
     ;;
   *)

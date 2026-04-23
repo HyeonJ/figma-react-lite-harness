@@ -249,13 +249,19 @@ G4-G8 PASS 후 자동 커밋 메시지에 (opus-assist) 포함.
 ### §5.1 토큰 재추출 (디자인 변경 시)
 
 ```
-Figma 디자인이 업데이트됐어. 토큰을 재추출해줘.
+Figma 디자인이 업데이트됐어. 토큰을 재추출하고 영향 분석해줘.
 
-1. scripts/extract-tokens.sh <fileKey> 재실행
-2. src/styles/tokens.css / fonts.css 변경 사항 diff 확인
-3. docs/token-audit.md 갱신
-4. 변경된 토큰이 기존 섹션에 영향이 있으면 보고
-5. 별도 커밋: chore(tokens): Figma 업데이트 반영
+1. 현재 tokens.css 를 임시 백업:
+   cp src/styles/tokens.css /tmp/tokens-before.css
+2. scripts/extract-tokens.sh <fileKey> 재실행
+3. src/styles/tokens.css / fonts.css 변경 사항 diff 출력
+4. 기존 섹션 영향 분석 (G4 --diff 모드):
+   node scripts/check-token-usage.mjs src/components/sections --diff /tmp/tokens-before.css
+5. 영향받는 섹션 리스트가 나오면:
+   - 각 섹션에 대해 measure-quality.sh 재실행 → 이상 없으면 OK
+   - 색·간격 시각 차이 있으면 해당 섹션 plan 갱신 후 재작업
+6. docs/token-audit.md 갱신
+7. 별도 커밋: chore(tokens): Figma 업데이트 반영 (영향 N개 섹션 재검증)
 ```
 
 ### §5.2 기존 프로젝트에 하네스 적용 (마이그레이션)

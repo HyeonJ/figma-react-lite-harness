@@ -4,10 +4,11 @@
 # 설치는 하지 않는다. 상태만 확인하고 미비한 항목에 대해 해결 명령어 안내.
 #
 # Usage:
-#   bash scripts/doctor.sh [--strict]
+#   bash scripts/doctor.sh [--strict] [--skip-project]
 #
 # 옵션:
-#   --strict   선택 항목(lhci/gh 등)이 없어도 exit 1
+#   --strict         선택 항목(lhci/gh 등)이 없어도 exit 1
+#   --skip-project   §5 프로젝트 구조 체크 스킵 (bootstrap.sh 에서 빈 디렉토리 실행 시 사용)
 #
 # 종료 코드:
 #   0 모든 필수 OK
@@ -16,7 +17,13 @@
 set -u
 
 STRICT=0
-[ "${1:-}" = "--strict" ] && STRICT=1
+SKIP_PROJECT=0
+for arg in "$@"; do
+  case "$arg" in
+    --strict) STRICT=1 ;;
+    --skip-project) SKIP_PROJECT=1 ;;
+  esac
+done
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "${SCRIPT_DIR}/_lib/load-figma-token.sh"
@@ -143,25 +150,30 @@ else
 fi
 
 # ========== 프로젝트 레벨 체크 ==========
-section "5/5 프로젝트 구조 (실행 위치 기준)"
+if [ "$SKIP_PROJECT" -eq 0 ]; then
+  section "5/5 프로젝트 구조 (실행 위치 기준)"
 
-if [ -f "package.json" ]; then
-  ok "package.json" "존재"
-else
-  warn "package.json" "없음 (하네스 루트 또는 미부트스트랩 프로젝트)"
-fi
+  if [ -f "package.json" ]; then
+    ok "package.json" "존재"
+  else
+    warn "package.json" "없음 (하네스 루트 또는 미부트스트랩 프로젝트)"
+  fi
 
-if [ -f "src/styles/tokens.css" ]; then
-  ok "src/styles/tokens.css" "존재"
-else
-  warn "tokens.css" "없음"
-  hint "bash scripts/extract-tokens.sh <fileKey>"
-fi
+  if [ -f "src/styles/tokens.css" ]; then
+    ok "src/styles/tokens.css" "존재"
+  else
+    warn "tokens.css" "없음"
+    hint "bash scripts/extract-tokens.sh <fileKey>"
+  fi
 
-if [ -f "PROGRESS.md" ]; then
-  ok "PROGRESS.md" "존재"
+  if [ -f "PROGRESS.md" ]; then
+    ok "PROGRESS.md" "존재"
+  else
+    warn "PROGRESS.md" "없음 (새 프로젝트면 bootstrap.sh 로 생성)"
+  fi
 else
-  warn "PROGRESS.md" "없음 (새 프로젝트면 bootstrap.sh 로 생성)"
+  section "5/5 프로젝트 구조"
+  printf "  \033[2m(--skip-project: bootstrap 초입 실행 → 프로젝트 체크 생략)\033[0m\n"
 fi
 
 # ========== 결과 ==========

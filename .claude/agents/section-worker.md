@@ -35,7 +35,9 @@ model: sonnet
 - `scripts/figma-rest-image.sh <fileKey> <nodeId> figma-screenshots/{page}-{section}.png --scale 2`
   - **공통 컴포넌트**(header/footer/shared)는 `figma-screenshots/{section}.png` (page 접두사 없음)
 - `get_design_context` 1회 호출 (Figma MCP) — 토큰 12K 이하 확인
-  - 쿼터 부족이면 대체: `curl GET /v1/files/{key}/nodes?ids=<nodeId>&depth=3`
+  - 쿼터 부족 또는 **MCP 미등록 상태**(도구 목록에 `mcp__*figma*__get_design_context` 없음) → 즉시 REST로 폴백:
+    `curl GET https://api.figma.com/v1/files/{fileKey}/nodes?ids=<nodeId>&depth=3`
+  - REST 응답의 `document.children[].children[]` 구조에서 layout/fill/style 추출. 코드 힌트는 없지만 구현에 충분한 raw 데이터 제공
 - `plan/{section}.md` **간단히** 작성:
   - 컴포넌트 트리 (5~10줄)
   - 에셋 표 (파일명·nodeId·동적 여부·처리 방식)
@@ -69,6 +71,9 @@ model: sonnet
 5. **Figma REST PNG는 baked-in 합성 사진** — CSS에서 `rotate()` / `mix-blend-*` / 배경색 재적용 금지
 6. **any/unknown 금지**. props는 `readonly` interface
 7. **플러그인 덤프(absolute)를 그대로 옮기지 말 것** — flex/grid로 재구성
+8. **Preview 라우트 규약** — `App.tsx` 또는 `src/routes/{Section}Preview.tsx` 로
+   경로 `/__preview/{section-name}` 등록. `measure-quality.sh` G7 Lighthouse 측정이
+   `http://127.0.0.1:5173/__preview/{section-name}` 고정 URL로 접근하므로 반드시 이 규약 준수.
 
 ### 4. 품질 게이트 (필수, 축약 없이 모두 실행)
 
