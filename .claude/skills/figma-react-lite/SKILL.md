@@ -57,20 +57,28 @@ bootstrap.sh 내부:
 
 이 Phase에서 오케스트레이터는 **bootstrap.sh 실행만 안내**. 수동 작업 최소.
 
-## Phase 2: 페이지 분해
+## Phase 2: 페이지 분해 + DS 인벤토리
 
 새 페이지 시작 시 오케스트레이터가 **직접** 수행 (워커 스폰 불필요):
 
 1. 사용자로부터 페이지 Node ID 수령 (또는 `docs/project-context.md`에서 조회)
 2. `get_metadata` 또는 REST `/v1/files/{key}/nodes?ids=<pageNodeId>&depth=3` 으로 섹션 트리 추출
 3. 12K 토큰 초과 섹션은 서브섹션으로 분할 (4조건: 토큰·이질 에셋·반복 자식·blend/transform)
-4. 페이지 전체 + 각 섹션 baseline PNG 저장:
+4. **DS 인벤토리 — 브랜드 요소 전수조사** (lite 정체성 유지를 위해 **체크리스트만**, 신규 게이트 없음)
+   - Figma 전체에서 **3+ 섹션에 반복 등장**하는 요소 식별:
+     - 로고 / 워드마크 (텍스트 타이포도 포함 — Figma 심볼이 아니어도 공통화)
+     - 반복 아이콘, 반복 문구, 반복 카드 패턴
+   - `docs/project-context.md` 공통 컴포넌트 카탈로그에 기록
+   - **이 단계를 놓치면** 섹션 워커들이 각자 인라인 구현해서 사후 리팩터 비용 발생
+     (예: 로고를 Nav `<a>text</a>`, Footer `<p>text</p>`, Header `<img>` 로 각자 구현)
+5. 페이지 전체 + 각 섹션 baseline PNG 저장:
    ```bash
    scripts/figma-rest-image.sh <fileKey> <pageNodeId> figma-screenshots/{page}-full.png --scale 2
    scripts/figma-rest-image.sh <fileKey> <sectionNodeId> figma-screenshots/{page}-{section}.png --scale 2
    ```
-5. `PROGRESS.md`에 섹션 목록 추가 (체크박스)
-6. **사용자 승인 대기** — "이 분해로 진행해도 될까요?"
+6. `PROGRESS.md`에 섹션 목록 추가 (체크박스) — "공통 컴포넌트 먼저" 규칙에 따라
+   DS 인벤토리에서 식별한 컴포넌트를 Phase 3 맨 앞에 스폰
+7. **사용자 승인 대기** — "이 분해로 진행해도 될까요?"
 
 이 단계에서만 사용자 개입 1회.
 
@@ -93,6 +101,11 @@ Agent({
   figma_node_id: {nodeId}
   route: {route}
   retry_count: 0
+  required_imports: (선택) Phase 2 DS 인벤토리에서 이 섹션이 써야 하는 공통 컴포넌트
+    예: [{ name: "Wordmark", path: "src/components/ui/Wordmark" },
+         { name: "Button",   path: "src/components/ui/Button", variant: "default" }]
+    명시된 컴포넌트는 반드시 import해서 사용. 인라인 재구현 금지 (DRY 위반).
+    명시 없으면 워커 자율 판단.
 
   docs/workflow.md 참고. 모든 게이트 PASS 후 결과 JSON 반환.`
 })
